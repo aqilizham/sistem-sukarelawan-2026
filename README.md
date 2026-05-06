@@ -6,7 +6,7 @@ Prototaip ini dibina berdasarkan proposal `Sistem Bersepadu Pengurusan Sukarelaw
 
 Aplikasi ini boleh dibuka melalui GitHub Pages:
 
-`https://aqilizham.github.io/NAMA-REPO/`
+`https://aqilizham.github.io/vcore360-sukarelawan-sea2027/`
 
 GitHub Pages ialah hosting statik, jadi semua fungsi butang berjalan di browser dan data demo/perubahan pengguna disimpan di `localStorage` peranti masing-masing. Untuk data berpusat merentas semua pengguna, aplikasi ini perlu disambung kepada backend seperti Supabase, Firebase, atau API tersendiri.
 
