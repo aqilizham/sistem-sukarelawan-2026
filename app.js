@@ -1,4 +1,4 @@
-const STORAGE_KEY = "vcore360-sea2027-state";
+const STORAGE_KEY = "sistem-sukarelawan-2026-state";
 const API_ENABLED =
   (window.location.protocol === "http:" || window.location.protocol === "https:") &&
   ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -1560,7 +1560,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "vcore360-sukarelawan.csv";
+  link.download = "sistem-sukarelawan-2026.csv";
   link.click();
   URL.revokeObjectURL(url);
 }

@@ -1,12 +1,12 @@
-# V-CORE 360 - Sistem Sukarelawan Sukan SEA 2027
+# Sistem Sukarelawan 2026
 
-Prototaip ini dibina berdasarkan proposal `Sistem Bersepadu Pengurusan Sukarelawan V-CORE 360` untuk Sukan SEA 2027 dan Sukan Para ASEAN 2027.
+Aplikasi pengurusan sukarelawan untuk pendaftaran, saringan, penempatan, latihan, kehadiran, kit, sokongan, dan laporan.
 
 ## GitHub Pages
 
 Aplikasi ini boleh dibuka melalui GitHub Pages:
 
-`https://aqilizham.github.io/vcore360-sukarelawan-sea2027/`
+`https://aqilizham.github.io/sistem-sukarelawan-2026/`
 
 GitHub Pages ialah hosting statik, jadi semua fungsi butang berjalan di browser dan data demo/perubahan pengguna disimpan di `localStorage` peranti masing-masing. Untuk data berpusat merentas semua pengguna, aplikasi ini perlu disambung kepada backend seperti Supabase, Firebase, atau API tersendiri.
 
