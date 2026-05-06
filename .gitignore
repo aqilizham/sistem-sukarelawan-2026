@@ -1,0 +1,14 @@
+# Local backend/runtime files are not deployed to GitHub Pages.
+server.py
+start-webapp.ps1
+stop-webapp.ps1
+server.pid
+server.log
+server.err.log
+data.json
+__pycache__/
+chrome-*/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

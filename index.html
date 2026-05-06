@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ms">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>V-CORE 360 | Sukarelawan Sukan SEA 2027</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="icons.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navigasi utama">
+        <div class="brand">
+          <div class="brand-mark">V</div>
+          <div>
+            <strong>V-CORE 360</strong>
+            <span>Sukan SEA 2027</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" id="navList">
+          <button class="nav-item active" data-view="overview">
+            <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+          </button>
+          <button class="nav-item" data-view="applications">
+            <i data-lucide="clipboard-list"></i><span>Permohonan</span>
+          </button>
+          <button class="nav-item" data-view="screening">
+            <i data-lucide="shield-check"></i><span>Saringan</span>
+          </button>
+          <button class="nav-item" data-view="placement">
+            <i data-lucide="map-pin"></i><span>Penempatan</span>
+          </button>
+          <button class="nav-item" data-view="schedule">
+            <i data-lucide="calendar-days"></i><span>Jadual & Latihan</span>
+          </button>
+          <button class="nav-item" data-view="kit">
+            <i data-lucide="badge-check"></i><span>Kit & Akreditasi</span>
+          </button>
+          <button class="nav-item" data-view="attendance">
+            <i data-lucide="scan-line"></i><span>Kehadiran</span>
+          </button>
+          <button class="nav-item" data-view="support">
+            <i data-lucide="messages-square"></i><span>Aduan & Sokongan</span>
+          </button>
+          <button class="nav-item" data-view="addons">
+            <i data-lucide="blocks"></i><span>Sistem Tambahan</span>
+          </button>
+          <button class="nav-item" data-view="reports">
+            <i data-lucide="file-bar-chart"></i><span>Sijil & Laporan</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <span>Kluster aktif</span>
+          <strong>Kuala Lumpur</strong>
+          <small>Sasaran operasi: 5,000 sukarelawan</small>
+        </div>
+      </aside>
+
+      <div class="main-column">
+        <header class="topbar">
+          <button class="icon-button menu-toggle" id="menuToggle" aria-label="Buka menu">
+            <i data-lucide="menu"></i>
+            <span class="fallback-symbol" aria-hidden="true">&#9776;</span>
+          </button>
+
+          <div class="page-title">
+            <span id="viewKicker">Operasi berpusat</span>
+            <h1 id="viewTitle">Dashboard</h1>
+          </div>
+
+          <label class="search-box">
+            <i data-lucide="search"></i>
+            <input id="globalSearch" type="search" placeholder="Cari nama, ID, venue, unit">
+          </label>
+
+          <div class="top-controls">
+            <label>
+              <span>Peranan</span>
+              <select id="roleSelect">
+                <option>Admin Induk</option>
+                <option>Admin Kluster</option>
+                <option>Admin Venue</option>
+                <option>Ketua Unit</option>
+                <option>Sukarelawan</option>
+              </select>
+            </label>
+            <label>
+              <span>Kluster</span>
+              <select id="clusterSelect">
+                <option>Kuala Lumpur</option>
+                <option>Selangor</option>
+                <option>Putrajaya</option>
+                <option>Johor</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <main class="content" id="app" tabindex="-1"></main>
+      </div>
+    </div>
+
+    <dialog class="modal" id="passModal">
+      <div class="modal-head">
+        <h2>Pas Akreditasi</h2>
+        <button class="icon-button" id="closeModal" aria-label="Tutup">
+          <i data-lucide="x"></i>
+          <span class="fallback-symbol" aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div id="modalBody"></div>
+    </dialog>
+  </body>
+</html>
