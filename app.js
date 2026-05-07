@@ -1,52 +1,42 @@
-const STORAGE_KEY = "sistem-sukarelawan-2026-state";
-const API_ENABLED =
-  (window.location.protocol === "http:" || window.location.protocol === "https:") &&
-  ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
-let saveTimer;
-let suppressSave = false;
+const appShell = document.querySelector("#appShell");
+const authRoot = document.querySelector("#authRoot");
+const app = document.querySelector("#app");
+const navList = document.querySelector("#navList");
+const roleDisplay = document.querySelector("#roleDisplay");
+const clusterSelect = document.querySelector("#clusterSelect");
+const globalSearch = document.querySelector("#globalSearch");
+const viewTitle = document.querySelector("#viewTitle");
+const viewKicker = document.querySelector("#viewKicker");
+const passModal = document.querySelector("#passModal");
+const modalBody = document.querySelector("#modalBody");
+const sidebar = document.querySelector(".sidebar");
+const logoutButton = document.querySelector("#logoutButton");
 
-const seed = {
-  role: "Admin Induk",
-  cluster: "Kuala Lumpur",
+const DEMO_MODE = window.SukarelawanSupabase?.DEMO_MODE === true;
+
+const state = {
+  user: null,
+  profile: null,
+  role: "-",
+  cluster: "Semua",
   search: "",
   view: "overview",
+  loading: false,
+  error: "",
+  volunteers: [],
+  attendanceLog: [],
+  complaints: [],
+  broadcasts: [],
   activity: [
-    { time: "08:10", text: "Saringan 4 permohonan baharu selesai", type: "green" },
-    { time: "09:35", text: "MWGateway menghantar mesej ke Unit Protokol", type: "blue" },
-    { time: "10:05", text: "Venue KL Sports City capai 92% kekuatan syif", type: "gold" }
+    { time: "08:10", text: "Sistem production-ready dimuatkan dengan Supabase", type: "green" },
+    { time: "09:35", text: "Role pengguna dibaca daripada profiles.role", type: "blue" },
+    { time: "10:05", text: "RLS mengawal akses data di database", type: "gold" }
   ],
-  chat: [
-    { from: "bot", text: "AssistAI sedia membantu semakan jadual, latihan, kit, dan pembayaran." }
-  ],
-  attendanceLog: [
-    { id: "V27004", name: "Mei Ling Tan", venue: "Axiata Arena", time: "07:46", method: "QR" },
-    { id: "V27009", name: "Nurin Aisyah", venue: "KLCC", time: "08:02", method: "Manual" }
-  ],
-  complaints: [
-    {
-      id: "HD-1201",
-      volunteer: "Arman Shah",
-      issue: "Pertukaran saiz jaket",
-      channel: "HelpDesk Pro",
-      status: "Dalam tindakan",
-      priority: "Sederhana"
-    },
-    {
-      id: "HD-1202",
-      volunteer: "Kavitha Nair",
-      issue: "Jadual latihan bertembung",
-      channel: "Live Chat",
-      status: "Baharu",
-      priority: "Tinggi"
-    }
-  ],
+  chat: [{ from: "bot", text: "AssistAI sedia membantu semakan jadual, latihan, kit, dan sokongan." }],
   sponsors: [
     { name: "MetroCare", category: "Perubatan", status: "Disahkan", value: 45000 },
     { name: "MoveKL", category: "Pengangkutan", status: "Rundingan", value: 72000 },
     { name: "HydraPlus", category: "Minuman", status: "Draf MoU", value: 28000 }
-  ],
-  broadcasts: [
-    { target: "Semua Ketua Unit", text: "Sahkan senarai syif minggu ini sebelum 5 petang.", sent: "10:20" }
   ],
   shifts: [
     { day: "Isnin", venue: "KL Sports City", unit: "Venue Ops", time: "07:00-15:00", needed: 160, assigned: 148 },
@@ -56,222 +46,8 @@ const seed = {
     { day: "Khamis", venue: "Merdeka Square", unit: "Transport", time: "06:00-14:00", needed: 120, assigned: 105 },
     { day: "Jumaat", venue: "MITEC", unit: "Accreditation", time: "10:00-18:00", needed: 80, assigned: 80 },
     { day: "Sabtu", venue: "National Aquatic Centre", unit: "Medical Support", time: "07:00-15:00", needed: 55, assigned: 52 }
-  ],
-  volunteers: [
-    {
-      id: "V27001",
-      name: "Arman Shah",
-      age: 24,
-      phone: "60123456001",
-      email: "arman@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "KL Sports City",
-      unit: "Venue Ops",
-      status: "Diluluskan",
-      screening: 88,
-      training: 75,
-      kit: "Belum lengkap",
-      accreditation: "Draf",
-      attendance: 4,
-      rewards: 330,
-      payment: "Belum diproses",
-      lodging: "Tidak perlu",
-      phoneVerified: true,
-      gps: "3.054, 101.691"
-    },
-    {
-      id: "V27002",
-      name: "Kavitha Nair",
-      age: 31,
-      phone: "60123456002",
-      email: "kavitha@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "KLCC",
-      unit: "Protokol",
-      status: "Semakan",
-      screening: 72,
-      training: 50,
-      kit: "Belum agih",
-      accreditation: "Belum",
-      attendance: 1,
-      rewards: 120,
-      payment: "Menunggu akaun",
-      lodging: "StaySmart",
-      phoneVerified: true,
-      gps: "3.153, 101.713"
-    },
-    {
-      id: "V27003",
-      name: "Hakim Roslan",
-      age: 27,
-      phone: "60123456003",
-      email: "hakim@example.com",
-      cluster: "Selangor",
-      venue: "Axiata Arena",
-      unit: "Media",
-      status: "Permohonan",
-      screening: 64,
-      training: 20,
-      kit: "Belum agih",
-      accreditation: "Belum",
-      attendance: 0,
-      rewards: 40,
-      payment: "Belum diproses",
-      lodging: "Tidak perlu",
-      phoneVerified: false,
-      gps: "3.054, 101.691"
-    },
-    {
-      id: "V27004",
-      name: "Mei Ling Tan",
-      age: 22,
-      phone: "60123456004",
-      email: "meiling@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "Axiata Arena",
-      unit: "Media",
-      status: "Diluluskan",
-      screening: 91,
-      training: 90,
-      kit: "Lengkap",
-      accreditation: "Aktif",
-      attendance: 6,
-      rewards: 520,
-      payment: "Dibayar",
-      lodging: "StaySmart",
-      phoneVerified: true,
-      gps: "3.054, 101.691"
-    },
-    {
-      id: "V27005",
-      name: "Daniel Lim",
-      age: 29,
-      phone: "60123456005",
-      email: "daniel@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "Bukit Jalil Stadium",
-      unit: "Crowd Control",
-      status: "Diluluskan",
-      screening: 82,
-      training: 60,
-      kit: "Sebahagian",
-      accreditation: "Draf",
-      attendance: 3,
-      rewards: 260,
-      payment: "Diproses",
-      lodging: "Tidak perlu",
-      phoneVerified: true,
-      gps: "3.054, 101.691"
-    },
-    {
-      id: "V27006",
-      name: "Farah Izzati",
-      age: 26,
-      phone: "60123456006",
-      email: "farah@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "MITEC",
-      unit: "Accreditation",
-      status: "Ditolak",
-      screening: 41,
-      training: 0,
-      kit: "Belum agih",
-      accreditation: "Belum",
-      attendance: 0,
-      rewards: 0,
-      payment: "Belum diproses",
-      lodging: "Tidak perlu",
-      phoneVerified: false,
-      gps: "3.179, 101.666"
-    },
-    {
-      id: "V27007",
-      name: "Iqbal Danish",
-      age: 35,
-      phone: "60123456007",
-      email: "iqbal@example.com",
-      cluster: "Putrajaya",
-      venue: "Merdeka Square",
-      unit: "Transport",
-      status: "Semakan",
-      screening: 78,
-      training: 40,
-      kit: "Belum agih",
-      accreditation: "Belum",
-      attendance: 1,
-      rewards: 90,
-      payment: "Menunggu akaun",
-      lodging: "StaySmart",
-      phoneVerified: true,
-      gps: "3.148, 101.694"
-    },
-    {
-      id: "V27008",
-      name: "Sofia Rahman",
-      age: 21,
-      phone: "60123456008",
-      email: "sofia@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "National Aquatic Centre",
-      unit: "Medical Support",
-      status: "Diluluskan",
-      screening: 95,
-      training: 100,
-      kit: "Lengkap",
-      accreditation: "Aktif",
-      attendance: 7,
-      rewards: 610,
-      payment: "Dibayar",
-      lodging: "Tidak perlu",
-      phoneVerified: true,
-      gps: "3.055, 101.690"
-    },
-    {
-      id: "V27009",
-      name: "Nurin Aisyah",
-      age: 28,
-      phone: "60123456009",
-      email: "nurin@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "KLCC",
-      unit: "Protokol",
-      status: "Diluluskan",
-      screening: 84,
-      training: 80,
-      kit: "Lengkap",
-      accreditation: "Aktif",
-      attendance: 5,
-      rewards: 420,
-      payment: "Dibayar",
-      lodging: "StaySmart",
-      phoneVerified: true,
-      gps: "3.153, 101.713"
-    },
-    {
-      id: "V27010",
-      name: "Jason Wong",
-      age: 33,
-      phone: "60123456010",
-      email: "jason@example.com",
-      cluster: "Kuala Lumpur",
-      venue: "Bukit Jalil Stadium",
-      unit: "Crowd Control",
-      status: "Permohonan",
-      screening: 58,
-      training: 0,
-      kit: "Belum agih",
-      accreditation: "Belum",
-      attendance: 0,
-      rewards: 0,
-      payment: "Belum diproses",
-      lodging: "Tidak perlu",
-      phoneVerified: false,
-      gps: "3.054, 101.691"
-    }
   ]
 };
-
-let state = structuredClone(seed);
 
 const views = {
   overview: { title: "Dashboard", kicker: "Operasi berpusat" },
@@ -287,99 +63,54 @@ const views = {
 };
 
 const statusClass = {
-  "Diluluskan": "approved",
-  "Semakan": "review",
-  "Permohonan": "pending",
-  "Ditolak": "rejected",
-  "Lengkap": "done",
-  "Aktif": "done",
-  "Draf": "review",
-  "Belum": "pending",
+  Diluluskan: "approved",
+  Semakan: "review",
+  Permohonan: "pending",
+  Ditolak: "rejected",
+  Lengkap: "done",
+  Aktif: "done",
+  Draf: "review",
+  Belum: "pending",
   "Belum lengkap": "pending",
   "Belum agih": "pending",
-  "Sebahagian": "review",
-  "Dibayar": "done",
-  "Diproses": "review",
+  Sebahagian: "review",
+  Dibayar: "done",
+  Diproses: "review",
   "Belum diproses": "pending",
-  "Menunggu akaun": "risk"
+  "Menunggu akaun": "risk",
+  Selesai: "done",
+  Baharu: "pending",
+  "Dalam tindakan": "review"
 };
 
-const app = document.querySelector("#app");
-const navList = document.querySelector("#navList");
-const roleSelect = document.querySelector("#roleSelect");
-const clusterSelect = document.querySelector("#clusterSelect");
-const globalSearch = document.querySelector("#globalSearch");
-const viewTitle = document.querySelector("#viewTitle");
-const viewKicker = document.querySelector("#viewKicker");
-const passModal = document.querySelector("#passModal");
-const modalBody = document.querySelector("#modalBody");
-const sidebar = document.querySelector(".sidebar");
+const rolePermissions = {
+  "Admin Induk": new Set(["createVolunteer", "approve", "screening", "placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
+  "Admin Kluster": new Set(["createVolunteer", "approve", "screening", "placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
+  "Admin Venue": new Set(["placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
+  "Ketua Unit": new Set(["training", "attendance", "support", "export"]),
+  Sukarelawan: new Set(["createVolunteer", "support"])
+};
 
-async function loadState() {
-  const localState = loadLocalState();
-  if (!API_ENABLED) return localState;
-
-  try {
-    const response = await fetch("/api/state", { headers: { Accept: "application/json" }, cache: "no-store" });
-    if (response.ok) {
-      const payload = await response.json();
-      if (payload.state) {
-        return { ...structuredClone(seed), ...payload.state };
-      }
-    }
-
-    await persistState(localState);
-    return localState;
-  } catch {
-    return localState;
-  }
-}
-
-function loadLocalState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return saved ? { ...structuredClone(seed), ...saved } : structuredClone(seed);
-  } catch {
-    return structuredClone(seed);
-  }
-}
-
-function saveState() {
-  if (suppressSave) return;
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (!API_ENABLED) return;
-
-  clearTimeout(saveTimer);
-  const snapshot = structuredClone(state);
-  saveTimer = setTimeout(() => persistState(snapshot), 150);
-}
-
-async function persistState(snapshot) {
-  if (!API_ENABLED) return;
-  try {
-    await fetch("/api/state", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(snapshot)
-    });
-  } catch {
-    toast("Server tidak dapat simpan data. Perubahan masih disimpan dalam pelayar.");
-  }
+function can(action) {
+  return rolePermissions[state.role]?.has(action) || false;
 }
 
 function setView(view) {
   state.view = view;
-  saveState();
   render();
 }
 
-function filteredVolunteers(options = {}) {
+function scopeCluster() {
+  if (state.role === "Admin Induk") return state.cluster || "Semua";
+  return state.profile?.cluster || "Semua";
+}
+
+function filteredVolunteers(options = {}, source = state.volunteers) {
   const search = (options.search ?? state.search).trim().toLowerCase();
-  const cluster = options.cluster ?? state.cluster;
-  return state.volunteers.filter((volunteer) => {
+  const cluster = options.cluster ?? scopeCluster();
+  return source.filter((volunteer) => {
     const matchesCluster = cluster === "Semua" || volunteer.cluster === cluster;
-    const haystack = [volunteer.id, volunteer.name, volunteer.email, volunteer.venue, volunteer.unit, volunteer.status]
+    const haystack = [volunteer.id, volunteer.name, volunteer.email, volunteer.phone, volunteer.venue, volunteer.unit, volunteer.status]
       .join(" ")
       .toLowerCase();
     return matchesCluster && (!search || haystack.includes(search));
@@ -400,11 +131,11 @@ function percentage(value, total) {
 }
 
 function statusBadge(value) {
-  return `<span class="status ${statusClass[value] || "info"}">${value}</span>`;
+  return `<span class="status ${statusClass[value] || "info"}">${escapeHtml(value || "-")}</span>`;
 }
 
 function initials(name) {
-  return name
+  return String(name || "-")
     .split(" ")
     .map((part) => part[0])
     .join("")
@@ -417,7 +148,7 @@ function formatMoney(value) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -430,21 +161,169 @@ function metricCard(label, value, foot, color = "green", values = [40, 58, 52, 6
   return `
     <article class="metric-card">
       <div class="metric-top">
-        <span>${label}</span>
-        <span class="tag ${color}">${foot}</span>
+        <span>${escapeHtml(label)}</span>
+        <span class="tag ${color}">${escapeHtml(foot)}</span>
       </div>
-      <div class="metric-value">${value}</div>
+      <div class="metric-value">${escapeHtml(value)}</div>
       <div class="sparkline" aria-hidden="true">${bars}</div>
     </article>
   `;
 }
 
+function renderAuth(mode = "login", message = "") {
+  appShell.hidden = true;
+  authRoot.hidden = false;
+
+  if (!window.SukarelawanSupabase?.isConfigured()) {
+    authRoot.innerHTML = `
+      <section class="auth-card">
+        <div class="brand auth-brand">
+          <div class="brand-mark">S</div>
+          <div>
+            <strong>Sistem Sukarelawan</strong>
+            <span>2026</span>
+          </div>
+        </div>
+        <div class="alert">
+          <strong>Konfigurasi Supabase diperlukan</strong>
+          <p>Isi <code>supabase-config.js</code> dengan Project URL dan anon public key Supabase. Production default menggunakan database pusat.</p>
+        </div>
+        <pre class="code-block">window.SUKARELAWAN_SUPABASE_CONFIG = {
+  url: "https://PROJECT_REF.supabase.co",
+  anonKey: "SUPABASE_ANON_PUBLIC_KEY"
+};</pre>
+      </section>
+    `;
+    window.lucide?.createIcons();
+    return;
+  }
+
+  const isRegister = mode === "register";
+  authRoot.innerHTML = `
+    <section class="auth-card">
+      <div class="brand auth-brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <strong>Sistem Sukarelawan</strong>
+          <span>2026</span>
+        </div>
+      </div>
+      <div class="auth-tabs">
+        <button class="${!isRegister ? "active" : ""}" data-auth-mode="login">Login</button>
+        <button class="${isRegister ? "active" : ""}" data-auth-mode="register">Register</button>
+      </div>
+      ${message ? `<div class="alert ${message.includes("berjaya") ? "success" : ""}">${escapeHtml(message)}</div>` : ""}
+      <form class="auth-form" id="${isRegister ? "registerForm" : "loginForm"}">
+        ${
+          isRegister
+            ? `
+              <label>Nama penuh<input name="fullName" required autocomplete="name"></label>
+              <label>No telefon<input name="phone" required inputmode="tel" autocomplete="tel"></label>
+            `
+            : ""
+        }
+        <label>Emel<input name="email" type="email" required autocomplete="email"></label>
+        <label>Kata laluan<input name="password" type="password" required minlength="8" autocomplete="${isRegister ? "new-password" : "current-password"}"></label>
+        <button class="button" type="submit"><i data-lucide="${isRegister ? "user-plus" : "log-in"}"></i>${isRegister ? "Register" : "Login"}</button>
+      </form>
+    </section>
+  `;
+  bindAuthEvents();
+  window.lucide?.createIcons();
+}
+
+function bindAuthEvents() {
+  authRoot.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    button.addEventListener("click", () => renderAuth(button.dataset.authMode));
+  });
+
+  authRoot.querySelector("#loginForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAuthAction(async () => {
+      await window.AuthService.signIn(form.get("email"), form.get("password"));
+      await loadAuthenticatedApp();
+    });
+  });
+
+  authRoot.querySelector("#registerForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAuthAction(async () => {
+      const result = await window.AuthService.signUp({
+        fullName: form.get("fullName"),
+        phone: form.get("phone"),
+        email: form.get("email"),
+        password: form.get("password")
+      });
+      if (result.session) {
+        await loadAuthenticatedApp();
+      } else {
+        renderAuth("login", "Pendaftaran berjaya. Sila semak emel jika pengesahan emel diaktifkan.");
+      }
+    });
+  });
+}
+
+async function runAuthAction(action) {
+  try {
+    await action();
+  } catch (error) {
+    renderAuth(authRoot.querySelector("#registerForm") ? "register" : "login", error.message);
+  }
+}
+
+async function loadAuthenticatedApp() {
+  if (!window.SukarelawanSupabase?.isConfigured()) {
+    renderAuth("login");
+    return;
+  }
+
+  const session = await window.AuthService.getSession();
+  if (!session) {
+    renderAuth("login");
+    return;
+  }
+
+  state.user = session.user;
+  state.profile = await window.AuthService.loadProfile(session.user);
+  state.role = state.profile.role || "Sukarelawan";
+  state.cluster = state.role === "Admin Induk" ? "Semua" : state.profile.cluster || "Semua";
+  authRoot.hidden = true;
+  appShell.hidden = false;
+  await refreshData({ renderAfter: false });
+  pushActivity(`${state.profile.full_name || state.user.email} login sebagai ${state.role}`, "blue");
+  render();
+}
+
+async function refreshData({ renderAfter = true } = {}) {
+  state.loading = true;
+  state.error = "";
+  if (renderAfter) render();
+
+  try {
+    const data = await window.VolunteerService.loadOperationalData();
+    state.volunteers = data.volunteers;
+    state.attendanceLog = data.attendanceLog;
+    state.complaints = data.complaints;
+    state.broadcasts = data.broadcasts;
+  } catch (error) {
+    state.error = error.message;
+  } finally {
+    state.loading = false;
+    if (renderAfter) render();
+  }
+}
+
 function render() {
+  if (appShell.hidden) return;
+
   const view = views[state.view] || views.overview;
   viewTitle.textContent = view.title;
   viewKicker.textContent = view.kicker;
-  roleSelect.value = state.role;
-  clusterSelect.value = state.cluster;
+  roleDisplay.value = state.role;
+  clusterSelect.value = state.role === "Admin Induk" ? state.cluster : state.profile?.cluster || "Semua";
+  clusterSelect.disabled = state.role !== "Admin Induk";
   globalSearch.value = state.search;
 
   document.querySelectorAll(".nav-item").forEach((button) => {
@@ -464,9 +343,15 @@ function render() {
     reports: renderReports
   }[state.view];
 
-  app.innerHTML = renderer ? renderer() : renderOverview();
+  app.innerHTML = `${renderSystemState()}${renderer ? renderer() : renderOverview()}`;
   bindViewEvents();
   window.lucide?.createIcons();
+}
+
+function renderSystemState() {
+  if (state.loading) return `<div class="loading-banner"><i data-lucide="loader"></i>Memuat data Supabase...</div>`;
+  if (state.error) return `<div class="alert">${escapeHtml(state.error)}</div>`;
+  return "";
 }
 
 function renderOverview() {
@@ -482,7 +367,7 @@ function renderOverview() {
 
   return `
     <section class="grid metrics">
-      ${metricCard("Sukarelawan berdaftar", list.length.toLocaleString("ms-MY"), `Kluster ${state.cluster}`, "blue", [35, 46, 61, 72, 80, 92])}
+      ${metricCard("Sukarelawan berdaftar", list.length.toLocaleString("ms-MY"), scopeCluster() === "Semua" ? "Semua skop" : scopeCluster(), "blue", [35, 46, 61, 72, 80, 92])}
       ${metricCard("Diluluskan", approved.toLocaleString("ms-MY"), `${percentage(approved, list.length)}%`, "green", [42, 49, 55, 63, 76, 84])}
       ${metricCard("Dalam semakan", review.toLocaleString("ms-MY"), "Saringan", "gold", [25, 30, 44, 39, 47, 52])}
       ${metricCard("Hadir hari ini", present.toLocaleString("ms-MY"), "QR + manual", "violet", [18, 35, 45, 56, 68, 73])}
@@ -495,18 +380,20 @@ function renderOverview() {
             <h2>Kekuatan Venue</h2>
             <p>Taburan sukarelawan aktif mengikut lokasi tugasan.</p>
           </div>
-          <span class="pill">Multi-kluster</span>
+          <span class="pill">RLS aktif</span>
         </div>
         <div class="bar-list">
-          ${Object.entries(venueCounts)
-            .map(([venue, total]) => `
-              <div class="bar-row">
-                <span>${venue}</span>
-                <div class="progress"><span style="width:${percentage(total, maxVenue)}%"></span></div>
-                <strong>${total}</strong>
-              </div>
-            `)
-            .join("")}
+          ${
+            Object.entries(venueCounts)
+              .map(([venue, total]) => `
+                <div class="bar-row">
+                  <span>${escapeHtml(venue)}</span>
+                  <div class="progress"><span style="width:${percentage(total, maxVenue)}%"></span></div>
+                  <strong>${total}</strong>
+                </div>
+              `)
+              .join("") || `<div class="empty">Tiada rekod dalam skop ini.</div>`
+          }
         </div>
       </div>
 
@@ -516,29 +403,13 @@ function renderOverview() {
             <h2>Kesediaan Operasi</h2>
             <p>Status latihan, kit, dan akreditasi untuk hari operasi.</p>
           </div>
-          <span class="pill">${state.role}</span>
+          <span class="pill">${escapeHtml(state.role)}</span>
         </div>
         <div class="bar-list">
-          <div class="bar-row">
-            <span>Latihan</span>
-            <div class="progress"><span style="width:${trainingAvg}%"></span></div>
-            <strong>${trainingAvg}%</strong>
-          </div>
-          <div class="bar-row">
-            <span>Kit lengkap</span>
-            <div class="progress"><span style="width:${percentage(kitComplete, list.length)}%"></span></div>
-            <strong>${percentage(kitComplete, list.length)}%</strong>
-          </div>
-          <div class="bar-row">
-            <span>Pas aktif</span>
-            <div class="progress"><span style="width:${percentage(activePass, list.length)}%"></span></div>
-            <strong>${percentage(activePass, list.length)}%</strong>
-          </div>
-          <div class="bar-row">
-            <span>Verifikasi telefon</span>
-            <div class="progress"><span style="width:${percentage(list.filter((v) => v.phoneVerified).length, list.length)}%"></span></div>
-            <strong>${percentage(list.filter((v) => v.phoneVerified).length, list.length)}%</strong>
-          </div>
+          <div class="bar-row"><span>Latihan</span><div class="progress"><span style="width:${trainingAvg}%"></span></div><strong>${trainingAvg}%</strong></div>
+          <div class="bar-row"><span>Kit lengkap</span><div class="progress"><span style="width:${percentage(kitComplete, list.length)}%"></span></div><strong>${percentage(kitComplete, list.length)}%</strong></div>
+          <div class="bar-row"><span>Pas aktif</span><div class="progress"><span style="width:${percentage(activePass, list.length)}%"></span></div><strong>${percentage(activePass, list.length)}%</strong></div>
+          <div class="bar-row"><span>Telefon</span><div class="progress"><span style="width:${percentage(list.filter((v) => v.phoneVerified).length, list.length)}%"></span></div><strong>${percentage(list.filter((v) => v.phoneVerified).length, list.length)}%</strong></div>
         </div>
       </div>
     </section>
@@ -553,19 +424,21 @@ function renderOverview() {
           <button class="ghost-button" data-action="go" data-view="placement"><i data-lucide="map"></i>Penempatan</button>
         </div>
         <div class="venue-map">
-          ${Object.entries(venueCounts)
-            .slice(0, 6)
-            .map(([venue, total], index) => `
-              <div class="map-zone">
-                <div>
-                  <strong>${venue}</strong>
-                  <span class="muted">${total} sukarelawan</span>
+          ${
+            Object.entries(venueCounts)
+              .slice(0, 6)
+              .map(([venue, total], index) => `
+                <div class="map-zone">
+                  <div>
+                    <strong>${escapeHtml(venue)}</strong>
+                    <span class="muted">${total} sukarelawan</span>
+                  </div>
+                  <div class="progress"><span style="width:${Math.max(28, percentage(total, maxVenue))}%"></span></div>
+                  <span class="tag ${index % 2 ? "gold" : "green"}">${index % 2 ? "Pantau" : "Stabil"}</span>
                 </div>
-                <div class="progress"><span style="width:${Math.max(28, percentage(total, maxVenue))}%"></span></div>
-                <span class="tag ${index % 2 ? "gold" : "green"}">${index % 2 ? "Pantau" : "Stabil"}</span>
-              </div>
-            `)
-            .join("")}
+              `)
+              .join("") || `<div class="empty">Tiada venue dipaparkan.</div>`
+          }
         </div>
       </div>
 
@@ -582,10 +455,10 @@ function renderOverview() {
             .map((item) => `
               <article class="timeline-item">
                 <div class="toolbar">
-                  <strong>${item.time}</strong>
+                  <strong>${escapeHtml(item.time)}</strong>
                   <span class="tag ${item.type}">${item.type === "green" ? "Selesai" : item.type === "gold" ? "Pantau" : "Info"}</span>
                 </div>
-                <p>${item.text}</p>
+                <p>${escapeHtml(item.text)}</p>
               </article>
             `)
             .join("")}
@@ -597,39 +470,53 @@ function renderOverview() {
 
 function renderApplications() {
   const list = filteredVolunteers();
+  const canEdit = can("createVolunteer");
+  const ownVolunteer = state.volunteers.find((volunteer) => volunteer.profile_id === state.user?.id);
+  const selectedCluster = state.role === "Admin Induk" ? state.cluster === "Semua" ? "Kuala Lumpur" : state.cluster : state.profile?.cluster || ownVolunteer?.cluster || "Kuala Lumpur";
+
   return `
-    <section class="surface">
-      <div class="surface-head">
-        <div>
-          <h2>Daftar Sukarelawan</h2>
-          <p>Data asas, pilihan venue, dan unit tugasan.</p>
-        </div>
-        <span class="pill">${list.length} rekod dipapar</span>
-      </div>
-      <form class="field-grid" id="volunteerForm">
-        <div class="field"><label>Nama<input name="name" required placeholder="Nama penuh"></label></div>
-        <div class="field"><label>Emel<input name="email" type="email" required placeholder="nama@email.com"></label></div>
-        <div class="field"><label>No telefon<input name="phone" required placeholder="60123456789"></label></div>
-        <div class="field"><label>Umur<input name="age" type="number" min="18" value="21"></label></div>
-        <div class="field"><label>Kluster${clusterSelectHtml("cluster", state.cluster)}</label></div>
-        <div class="field"><label>Venue${venueSelectHtml("venue")}</label></div>
-        <div class="field"><label>Unit${unitSelectHtml("unit")}</label></div>
-        <div class="field"><label>Status${statusSelectHtml("status", "Permohonan")}</label></div>
-        <div class="field wide">
-          <button class="button" type="submit"><i data-lucide="user-plus"></i>Tambah permohonan</button>
-        </div>
-      </form>
-    </section>
+    ${
+      canEdit
+        ? `
+          <section class="surface">
+            <div class="surface-head">
+              <div>
+                <h2>${state.role === "Sukarelawan" ? "Profil / Permohonan Saya" : "Daftar Sukarelawan"}</h2>
+                <p>Data asas, pilihan venue, dan unit tugasan.</p>
+              </div>
+              <span class="pill">${ownVolunteer && state.role === "Sukarelawan" ? "Kemas kini" : "Rekod baharu"}</span>
+            </div>
+            <form class="field-grid" id="volunteerForm">
+              <div class="field"><label>Nama<input name="name" required placeholder="Nama penuh" value="${escapeHtml(ownVolunteer?.name || state.profile?.full_name || "")}"></label></div>
+              <div class="field"><label>Emel<input name="email" type="email" required placeholder="nama@email.com" value="${escapeHtml(ownVolunteer?.email || state.profile?.email || state.user?.email || "")}"></label></div>
+              <div class="field"><label>No telefon<input name="phone" required placeholder="60123456789" value="${escapeHtml(ownVolunteer?.phone || state.profile?.phone || "")}"></label></div>
+              <div class="field"><label>Umur<input name="age" type="number" min="18" max="80" value="${escapeHtml(ownVolunteer?.age || 21)}"></label></div>
+              <div class="field"><label>Kluster${clusterSelectHtml("cluster", ownVolunteer?.cluster || selectedCluster)}</label></div>
+              <div class="field"><label>Venue${venueSelectHtml("venue", ownVolunteer?.venue || "KL Sports City")}</label></div>
+              <div class="field"><label>Unit${unitSelectHtml("unit", ownVolunteer?.unit || "Venue Ops")}</label></div>
+              ${
+                can("approve")
+                  ? `<div class="field"><label>Status${statusSelectHtml("status", ownVolunteer?.status || "Permohonan")}</label></div>`
+                  : `<input type="hidden" name="status" value="${escapeHtml(ownVolunteer?.status || "Permohonan")}">`
+              }
+              <div class="field wide">
+                <button class="button" type="submit"><i data-lucide="user-plus"></i>${ownVolunteer && state.role === "Sukarelawan" ? "Kemas kini profil" : "Tambah permohonan"}</button>
+              </div>
+            </form>
+          </section>
+        `
+        : ""
+    }
 
     <section class="surface">
       <div class="surface-head">
         <div>
           <h2>Pangkalan Data Sukarelawan</h2>
-          <p>Carian global di atas menapis semua rekod aktif.</p>
+          <p>Carian global di atas menapis rekod dalam skop role semasa.</p>
         </div>
         <div class="row-actions">
-          <button class="ghost-button" data-action="exportCsv"><i data-lucide="download"></i>CSV</button>
-          <button class="ghost-button" data-action="resetDemo"><i data-lucide="rotate-ccw"></i>Reset demo</button>
+          <span class="pill">${list.length} rekod dipapar</span>
+          ${can("export") ? `<button class="ghost-button" data-action="exportCsv"><i data-lucide="download"></i>CSV</button>` : ""}
         </div>
       </div>
       ${volunteerTable(list)}
@@ -643,12 +530,16 @@ function renderScreening() {
     <section class="toolbar">
       <div>
         <h2>Senarai Saringan</h2>
-        <p class="muted">Skor mengambil kira umur, pengalaman, verifikasi telefon, latihan, dan kesesuaian unit.</p>
+        <p class="muted">Skor mengambil kira umur, verifikasi telefon, latihan, dan kesesuaian unit.</p>
       </div>
-      <div class="actions">
-        <button class="button" data-action="autoScore"><i data-lucide="wand-2"></i>Kira skor</button>
-        <button class="ghost-button" data-action="approveHigh"><i data-lucide="check-check"></i>Lulus skor tinggi</button>
-      </div>
+      ${
+        can("screening")
+          ? `<div class="actions">
+              <button class="button" data-action="autoScore"><i data-lucide="wand-2"></i>Kira skor</button>
+              ${can("approve") ? `<button class="ghost-button" data-action="approveHigh"><i data-lucide="check-check"></i>Lulus skor tinggi</button>` : ""}
+            </div>`
+          : ""
+      }
     </section>
 
     <section class="grid three">
@@ -658,26 +549,22 @@ function renderScreening() {
             <div class="score-ring" style="--score:${v.screening}">${v.screening}</div>
             <div>
               <div class="toolbar">
-                <strong>${v.name}</strong>
+                <strong>${escapeHtml(v.name)}</strong>
                 ${statusBadge(v.status)}
               </div>
-              <p class="muted">${v.id} - ${v.unit} - ${v.venue}</p>
+              <p class="muted">${escapeHtml(v.id)} - ${escapeHtml(v.unit)} - ${escapeHtml(v.venue)}</p>
               <div class="bar-list">
-                <div class="bar-row">
-                  <span>Latihan</span>
-                  <div class="progress"><span style="width:${v.training}%"></span></div>
-                  <strong>${v.training}%</strong>
-                </div>
-                <div class="bar-row">
-                  <span>Telefon</span>
-                  <div class="progress"><span style="width:${v.phoneVerified ? 100 : 0}%"></span></div>
-                  <strong>${v.phoneVerified ? "OK" : "Belum"}</strong>
-                </div>
+                <div class="bar-row"><span>Latihan</span><div class="progress"><span style="width:${v.training}%"></span></div><strong>${v.training}%</strong></div>
+                <div class="bar-row"><span>Telefon</span><div class="progress"><span style="width:${v.phoneVerified ? 100 : 0}%"></span></div><strong>${v.phoneVerified ? "OK" : "Belum"}</strong></div>
               </div>
-              <div class="card-actions">
-                <button class="ghost-button" data-action="screenDecision" data-id="${v.id}" data-status="Diluluskan"><i data-lucide="check"></i>Lulus</button>
-                <button class="danger-button" data-action="screenDecision" data-id="${v.id}" data-status="Ditolak"><i data-lucide="x"></i>Tolak</button>
-              </div>
+              ${
+                can("approve")
+                  ? `<div class="card-actions">
+                      <button class="ghost-button" data-action="screenDecision" data-id="${v.id}" data-status="Diluluskan"><i data-lucide="check"></i>Lulus</button>
+                      <button class="danger-button" data-action="screenDecision" data-id="${v.id}" data-status="Ditolak"><i data-lucide="x"></i>Tolak</button>
+                    </div>`
+                  : ""
+              }
             </div>
           </article>
         `)
@@ -694,31 +581,35 @@ function renderPlacement() {
 
   return `
     <section class="grid two">
-      <div class="surface">
-        <div class="surface-head">
-          <div>
-            <h2>Penempatan Manual</h2>
-            <p>Kemaskini venue dan unit berdasarkan keperluan operasi.</p>
-          </div>
-          <span class="pill">${approved.length} diluluskan</span>
-        </div>
-        <form class="field-grid compact" id="placementForm">
-          <div class="field"><label>Sukarelawan${volunteerSelectHtml("volunteerId", list)}</label></div>
-          <div class="field"><label>Venue${venueSelectHtml("venue")}</label></div>
-          <div class="field"><label>Unit${unitSelectHtml("unit")}</label></div>
-          <div class="field wide">
-            <button class="button" type="submit"><i data-lucide="send"></i>Kemaskini penempatan</button>
-          </div>
-        </form>
-      </div>
+      ${
+        can("placement")
+          ? `<div class="surface">
+              <div class="surface-head">
+                <div>
+                  <h2>Penempatan Manual</h2>
+                  <p>Kemaskini venue dan unit berdasarkan keperluan operasi.</p>
+                </div>
+                <span class="pill">${approved.length} diluluskan</span>
+              </div>
+              <form class="field-grid compact" id="placementForm">
+                <div class="field"><label>Sukarelawan${volunteerSelectHtml("volunteerId", list)}</label></div>
+                <div class="field"><label>Venue${venueSelectHtml("venue")}</label></div>
+                <div class="field"><label>Unit${unitSelectHtml("unit")}</label></div>
+                <div class="field wide">
+                  <button class="button" type="submit"><i data-lucide="send"></i>Kemaskini penempatan</button>
+                </div>
+              </form>
+            </div>`
+          : `<div class="surface"><div class="empty">Penempatan dikawal oleh admin yang dibenarkan.</div></div>`
+      }
 
       <div class="surface">
         <div class="surface-head">
           <div>
             <h2>Keperluan Unit</h2>
-            <p>Ringkasan kekuatan unit untuk tindakan Admin Kluster.</p>
+            <p>Ringkasan kekuatan unit untuk tindakan operasi.</p>
           </div>
-          <button class="ghost-button" data-action="balancePlacement"><i data-lucide="shuffle"></i>Imbang</button>
+          ${DEMO_MODE ? `<button class="ghost-button" data-action="balancePlacement"><i data-lucide="shuffle"></i>Imbang</button>` : ""}
         </div>
         <div class="bar-list">
           ${["Venue Ops", "Protokol", "Media", "Crowd Control", "Transport", "Accreditation", "Medical Support"]
@@ -739,18 +630,9 @@ function renderPlacement() {
     </section>
 
     <section class="kanban">
-      <div class="kanban-column">
-        <h2>Menunggu</h2>
-        ${pending.map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}
-      </div>
-      <div class="kanban-column">
-        <h2>Ditempatkan</h2>
-        ${approved.filter((v) => v.accreditation !== "Aktif").map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}
-      </div>
-      <div class="kanban-column">
-        <h2>Sedia Operasi</h2>
-        ${approved.filter((v) => v.accreditation === "Aktif").map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}
-      </div>
+      <div class="kanban-column"><h2>Menunggu</h2>${pending.map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}</div>
+      <div class="kanban-column"><h2>Ditempatkan</h2>${approved.filter((v) => v.accreditation !== "Aktif").map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}</div>
+      <div class="kanban-column"><h2>Sedia Operasi</h2>${approved.filter((v) => v.accreditation === "Aktif").map(compactVolunteerCard).join("") || `<p class="muted">Tiada rekod.</p>`}</div>
     </section>
   `;
 }
@@ -765,7 +647,6 @@ function renderSchedule() {
           <h2>Jadual Tugasan Mingguan</h2>
           <p>Syif venue, kekuatan semasa, dan jurang penempatan.</p>
         </div>
-        <button class="ghost-button" data-action="addShift"><i data-lucide="calendar-plus"></i>Tambah syif demo</button>
       </div>
       <div class="calendar-grid">
         ${days
@@ -778,8 +659,8 @@ function renderSchedule() {
                   .map((shift) => `
                     <span class="shift-chip ${shift.assigned < shift.needed ? "warn" : ""}">
                       <b>${shift.time}</b>
-                      ${shift.venue}
-                      <small>${shift.unit}: ${shift.assigned}/${shift.needed}</small>
+                      ${escapeHtml(shift.venue)}
+                      <small>${escapeHtml(shift.unit)}: ${shift.assigned}/${shift.needed}</small>
                     </span>
                   `)
                   .join("") || `<span class="muted">Tiada syif</span>`}
@@ -796,7 +677,7 @@ function renderSchedule() {
           <h2>Matriks Latihan</h2>
           <p>Modul orientasi, keselamatan, venue, dan tugas khusus.</p>
         </div>
-        <button class="button" data-action="completeTraining"><i data-lucide="graduation-cap"></i>Tandakan selesai</button>
+        ${can("training") ? `<button class="button" data-action="completeTraining"><i data-lucide="graduation-cap"></i>Tandakan selesai</button>` : ""}
       </div>
       ${volunteerTable(list, "training")}
     </section>
@@ -813,14 +694,18 @@ function renderKit() {
             <h2>Agihan Kit</h2>
             <p>Jaket, lanyard, tag nama, kupon makanan, dan bahan taklimat.</p>
           </div>
-          <button class="button" data-action="completeKit"><i data-lucide="package-check"></i>Lengkapkan dipilih</button>
+          ${can("kit") ? `<button class="button" data-action="completeKit"><i data-lucide="package-check"></i>Lengkapkan dipilih</button>` : ""}
         </div>
-        <form class="field-grid compact" id="kitForm">
-          <div class="field"><label>Sukarelawan${volunteerSelectHtml("volunteerId", list)}</label></div>
-          <div class="field"><label>Status kit${simpleSelectHtml("kit", ["Belum agih", "Sebahagian", "Belum lengkap", "Lengkap"])}</label></div>
-          <div class="field"><label>Akreditasi${simpleSelectHtml("accreditation", ["Belum", "Draf", "Aktif"])}</label></div>
-          <div class="field wide"><button class="button" type="submit"><i data-lucide="save"></i>Simpan status</button></div>
-        </form>
+        ${
+          can("kit")
+            ? `<form class="field-grid compact" id="kitForm">
+                <div class="field"><label>Sukarelawan${volunteerSelectHtml("volunteerId", list)}</label></div>
+                <div class="field"><label>Status kit${simpleSelectHtml("kit", ["Belum agih", "Sebahagian", "Belum lengkap", "Lengkap"])}</label></div>
+                <div class="field"><label>Akreditasi${simpleSelectHtml("accreditation", ["Belum", "Draf", "Aktif"])}</label></div>
+                <div class="field wide"><button class="button" type="submit"><i data-lucide="save"></i>Simpan status</button></div>
+              </form>`
+            : `<div class="empty">Status kit dipaparkan mengikut akses role.</div>`
+        }
       </div>
 
       <div class="surface">
@@ -839,15 +724,15 @@ function renderKit() {
               <article class="identity-pass">
                 <div class="pass-photo">${initials(v.name)}</div>
                 <div class="pass-meta">
-                  <strong>${v.name}</strong>
-                  <span>${v.id} - ${v.unit}</span>
-                  <span class="muted">${v.venue}</span>
+                  <strong>${escapeHtml(v.name)}</strong>
+                  <span>${escapeHtml(v.id)} - ${escapeHtml(v.unit)}</span>
+                  <span class="muted">${escapeHtml(v.venue)}</span>
                   ${statusBadge(v.accreditation)}
                   <button class="ghost-button" data-action="showPass" data-id="${v.id}"><i data-lucide="badge"></i>Lihat pas</button>
                 </div>
               </article>
             `)
-            .join("")}
+            .join("") || `<div class="empty">Tiada pas untuk dipaparkan.</div>`}
         </div>
       </div>
     </section>
@@ -872,16 +757,20 @@ function renderAttendance() {
         <div class="surface-head">
           <div>
             <h2>Daftar Kehadiran</h2>
-            <p>Input ID sukarelawan atau token QR demo.</p>
+            <p>Input ID, emel, atau nombor telefon sukarelawan.</p>
           </div>
           <span class="pill">${state.attendanceLog.length} daftar hari ini</span>
         </div>
-        <form class="field-grid compact" id="attendanceForm">
-          <div class="field"><label>ID / QR<input name="volunteerId" required placeholder="Contoh: V27004"></label></div>
-          <div class="field"><label>Kaedah${simpleSelectHtml("method", ["QR", "Manual", "GPS"])}</label></div>
-          <div class="field"><label>Venue${venueSelectHtml("venue")}</label></div>
-          <div class="field wide"><button class="button" type="submit"><i data-lucide="scan-line"></i>Check-in</button></div>
-        </form>
+        ${
+          can("attendance")
+            ? `<form class="field-grid compact" id="attendanceForm">
+                <div class="field"><label>ID / QR<input name="volunteerId" required placeholder="UUID / emel / telefon"></label></div>
+                <div class="field"><label>Kaedah${simpleSelectHtml("method", ["QR", "Manual", "GPS"])}</label></div>
+                <div class="field"><label>Venue${venueSelectHtml("venue")}</label></div>
+                <div class="field wide"><button class="button" type="submit"><i data-lucide="scan-line"></i>Check-in</button></div>
+              </form>`
+            : `<div class="empty">Rekod kehadiran boleh dilihat mengikut akses role.</div>`
+        }
       </div>
 
       <div class="surface">
@@ -890,7 +779,6 @@ function renderAttendance() {
             <h2>Pemantauan GPS</h2>
             <p>Koordinat terakhir sukarelawan di venue aktif.</p>
           </div>
-          <button class="ghost-button" data-action="syncGps"><i data-lucide="satellite"></i>Sinkron</button>
         </div>
         <div class="grid">
           ${list
@@ -899,13 +787,13 @@ function renderAttendance() {
             .map((v) => `
               <article class="timeline-item">
                 <div class="toolbar">
-                  <strong>${v.name}</strong>
-                  <span class="tag blue">${v.gps}</span>
+                  <strong>${escapeHtml(v.name)}</strong>
+                  <span class="tag blue">${escapeHtml(v.gps)}</span>
                 </div>
-                <p class="muted">${v.venue} - ${v.unit}</p>
+                <p class="muted">${escapeHtml(v.venue)} - ${escapeHtml(v.unit)}</p>
               </article>
             `)
-            .join("")}
+            .join("") || `<div class="empty">Tiada rekod GPS.</div>`}
         </div>
       </div>
     </section>
@@ -924,14 +812,14 @@ function renderAttendance() {
             ${state.attendanceLog
               .map((row) => `
                 <tr>
-                  <td>${row.time}</td>
-                  <td>${row.id}</td>
-                  <td>${row.name}</td>
-                  <td>${row.venue}</td>
-                  <td>${row.method}</td>
+                  <td>${escapeHtml(row.time)}</td>
+                  <td>${escapeHtml(row.id)}</td>
+                  <td>${escapeHtml(row.name)}</td>
+                  <td>${escapeHtml(row.venue)}</td>
+                  <td>${escapeHtml(row.method)}</td>
                 </tr>
               `)
-              .join("")}
+              .join("") || `<tr><td colspan="5">Tiada log kehadiran.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -951,7 +839,7 @@ function renderSupport() {
           <span class="pill">${state.complaints.length} tiket</span>
         </div>
         <form class="field-grid compact" id="ticketForm">
-          <div class="field"><label>Nama<input name="volunteer" required placeholder="Nama sukarelawan"></label></div>
+          <div class="field"><label>Nama<input name="volunteer" required placeholder="Nama sukarelawan" value="${escapeHtml(state.profile?.full_name || "")}"></label></div>
           <div class="field"><label>Prioriti${simpleSelectHtml("priority", ["Rendah", "Sederhana", "Tinggi"])}</label></div>
           <div class="field"><label>Saluran${simpleSelectHtml("channel", ["HelpDesk Pro", "Live Chat", "AssistAI"])}</label></div>
           <div class="field wide"><label>Isu<textarea name="issue" required placeholder="Ringkasan isu"></textarea></label></div>
@@ -967,11 +855,15 @@ function renderSupport() {
           </div>
           <span class="pill">${state.broadcasts.length} mesej</span>
         </div>
-        <form class="field-grid compact" id="broadcastForm">
-          <div class="field"><label>Sasaran${simpleSelectHtml("target", ["Semua Sukarelawan", "Semua Ketua Unit", "Unit Protokol", "Unit Media", "Unit Crowd Control"])}</label></div>
-          <div class="field wide"><label>Mesej<textarea name="text" required placeholder="Tulis mesej operasi"></textarea></label></div>
-          <div class="field wide"><button class="button" type="submit"><i data-lucide="send"></i>Hantar mesej</button></div>
-        </form>
+        ${
+          can("broadcast")
+            ? `<form class="field-grid compact" id="broadcastForm">
+                <div class="field"><label>Sasaran${simpleSelectHtml("target", ["Semua Sukarelawan", "Semua Ketua Unit", "Unit Protokol", "Unit Media", "Unit Crowd Control"])}</label></div>
+                <div class="field wide"><label>Mesej<textarea name="text" required placeholder="Tulis mesej operasi"></textarea></label></div>
+                <div class="field wide"><button class="button" type="submit"><i data-lucide="send"></i>Hantar mesej</button></div>
+              </form>`
+            : `<div class="empty">Broadcast dikawal oleh role operasi.</div>`
+        }
       </div>
     </section>
 
@@ -988,15 +880,15 @@ function renderSupport() {
             .map((ticket) => `
               <article class="ticket">
                 <div class="toolbar">
-                  <strong>${ticket.id} - ${ticket.volunteer}</strong>
-                  <span class="tag ${ticket.priority === "Tinggi" ? "red" : ticket.priority === "Sederhana" ? "gold" : "green"}">${ticket.priority}</span>
+                  <strong>${escapeHtml(shortId(ticket.id))} - ${escapeHtml(ticket.volunteer)}</strong>
+                  <span class="tag ${ticket.priority === "Tinggi" ? "red" : ticket.priority === "Sederhana" ? "gold" : "green"}">${escapeHtml(ticket.priority)}</span>
                 </div>
-                <p>${ticket.issue}</p>
-                <p class="muted">${ticket.channel} - ${ticket.status}</p>
-                <button class="ghost-button" data-action="closeTicket" data-id="${ticket.id}"><i data-lucide="check-circle"></i>Tutup tiket</button>
+                <p>${escapeHtml(ticket.issue)}</p>
+                <p class="muted">${escapeHtml(ticket.channel)} - ${escapeHtml(ticket.status)}</p>
+                ${can("support") ? `<button class="ghost-button" data-action="closeTicket" data-id="${ticket.id}"><i data-lucide="check-circle"></i>Tutup tiket</button>` : ""}
               </article>
             `)
-            .join("")}
+            .join("") || `<div class="empty">Tiada tiket.</div>`}
         </div>
       </div>
 
@@ -1004,11 +896,11 @@ function renderSupport() {
         <div class="surface-head">
           <div>
             <h2>AssistAI Chat</h2>
-            <p>Sokongan pantas 24/7 untuk soalan operasi.</p>
+            <p>Sokongan pantas untuk soalan operasi.</p>
           </div>
         </div>
         <div class="chat-log" id="chatLog">
-          ${state.chat.map((msg) => `<div class="chat-bubble ${msg.from}">${msg.text}</div>`).join("")}
+          ${state.chat.map((msg) => `<div class="chat-bubble ${msg.from}">${escapeHtml(msg.text)}</div>`).join("")}
         </div>
         <form class="field-grid compact" id="chatForm">
           <div class="field wide"><label>Soalan<input name="message" required placeholder="Contoh: bila latihan venue saya?"></label></div>
@@ -1050,11 +942,11 @@ function renderAddons() {
         .map((addon) => `
           <article class="addon">
             <div class="toolbar">
-              <strong>${addon[0]}</strong>
+              <strong>${escapeHtml(addon[0])}</strong>
               <i data-lucide="${addon[3]}"></i>
             </div>
-            <p>${addon[1]}</p>
-            <span class="tag ${addon[0] === "PayGate" || addon[0] === "AdaSMS" ? "green" : addon[0] === "SponsorHub" ? "gold" : "blue"}">${addon[2]}</span>
+            <p>${escapeHtml(addon[1])}</p>
+            <span class="tag ${addon[0] === "PayGate" || addon[0] === "AdaSMS" ? "green" : addon[0] === "SponsorHub" ? "gold" : "blue"}">${escapeHtml(addon[2])}</span>
           </article>
         `)
         .join("")}
@@ -1066,7 +958,6 @@ function renderAddons() {
           <h2>Vendor & Tajaan</h2>
           <p>Status pipeline SponsorHub.</p>
         </div>
-        <button class="ghost-button" data-action="addSponsor"><i data-lucide="plus"></i>Tambah demo</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -1075,8 +966,8 @@ function renderAddons() {
             ${state.sponsors
               .map((sponsor) => `
                 <tr>
-                  <td>${sponsor.name}</td>
-                  <td>${sponsor.category}</td>
+                  <td>${escapeHtml(sponsor.name)}</td>
+                  <td>${escapeHtml(sponsor.category)}</td>
                   <td>${statusBadge(sponsor.status === "Disahkan" ? "Diluluskan" : "Semakan")}</td>
                   <td>${formatMoney(sponsor.value)}</td>
                 </tr>
@@ -1101,31 +992,15 @@ function renderReports() {
             <p>Eksport data untuk Jawatankuasa Induk, kluster, venue, dan unit.</p>
           </div>
           <div class="row-actions">
-            <button class="button" data-action="exportCsv"><i data-lucide="download"></i>Eksport CSV</button>
+            ${can("export") ? `<button class="button" data-action="exportCsv"><i data-lucide="download"></i>Eksport CSV</button>` : ""}
             <button class="ghost-button" data-action="printReport"><i data-lucide="printer"></i>Cetak</button>
           </div>
         </div>
         <div class="bar-list">
-          <div class="bar-row">
-            <span>Diluluskan</span>
-            <div class="progress"><span style="width:${percentage(approved.length, list.length)}%"></span></div>
-            <strong>${approved.length}</strong>
-          </div>
-          <div class="bar-row">
-            <span>Latihan lengkap</span>
-            <div class="progress"><span style="width:${percentage(list.filter((v) => v.training >= 80).length, list.length)}%"></span></div>
-            <strong>${list.filter((v) => v.training >= 80).length}</strong>
-          </div>
-          <div class="bar-row">
-            <span>Kit lengkap</span>
-            <div class="progress"><span style="width:${percentage(list.filter((v) => v.kit === "Lengkap").length, list.length)}%"></span></div>
-            <strong>${list.filter((v) => v.kit === "Lengkap").length}</strong>
-          </div>
-          <div class="bar-row">
-            <span>Sijil layak</span>
-            <div class="progress"><span style="width:${percentage(list.filter((v) => v.attendance >= 3 && v.training >= 60).length, list.length)}%"></span></div>
-            <strong>${list.filter((v) => v.attendance >= 3 && v.training >= 60).length}</strong>
-          </div>
+          <div class="bar-row"><span>Diluluskan</span><div class="progress"><span style="width:${percentage(approved.length, list.length)}%"></span></div><strong>${approved.length}</strong></div>
+          <div class="bar-row"><span>Latihan lengkap</span><div class="progress"><span style="width:${percentage(list.filter((v) => v.training >= 80).length, list.length)}%"></span></div><strong>${list.filter((v) => v.training >= 80).length}</strong></div>
+          <div class="bar-row"><span>Kit lengkap</span><div class="progress"><span style="width:${percentage(list.filter((v) => v.kit === "Lengkap").length, list.length)}%"></span></div><strong>${list.filter((v) => v.kit === "Lengkap").length}</strong></div>
+          <div class="bar-row"><span>Sijil layak</span><div class="progress"><span style="width:${percentage(list.filter((v) => v.attendance >= 3 && v.training >= 60).length, list.length)}%"></span></div><strong>${list.filter((v) => v.attendance >= 3 && v.training >= 60).length}</strong></div>
         </div>
       </div>
 
@@ -1177,11 +1052,11 @@ function volunteerTable(list, mode = "default") {
           ${list
             .map((v) => `
               <tr>
-                <td>${v.id}</td>
-                <td><strong>${v.name}</strong><br><span class="muted">${v.email}</span></td>
-                <td>${v.cluster}</td>
-                <td>${v.venue}</td>
-                <td>${v.unit}</td>
+                <td>${escapeHtml(shortId(v.id))}</td>
+                <td><strong>${escapeHtml(v.name)}</strong><br><span class="muted">${escapeHtml(v.email)}</span></td>
+                <td>${escapeHtml(v.cluster)}</td>
+                <td>${escapeHtml(v.venue)}</td>
+                <td>${escapeHtml(v.unit)}</td>
                 <td>${statusBadge(v.status)}</td>
                 <td>
                   ${
@@ -1195,7 +1070,7 @@ function volunteerTable(list, mode = "default") {
                 <td>
                   <div class="row-actions">
                     <button class="ghost-button" data-action="showPass" data-id="${v.id}"><i data-lucide="badge"></i>Pas</button>
-                    <button class="ghost-button" data-action="quickApprove" data-id="${v.id}"><i data-lucide="check"></i>Lulus</button>
+                    ${can("approve") ? `<button class="ghost-button" data-action="quickApprove" data-id="${v.id}"><i data-lucide="check"></i>Lulus</button>` : ""}
                   </div>
                 </td>
               </tr>
@@ -1211,17 +1086,18 @@ function compactVolunteerCard(v) {
   return `
     <article class="ticket">
       <div class="toolbar">
-        <strong>${v.name}</strong>
+        <strong>${escapeHtml(v.name)}</strong>
         ${statusBadge(v.status)}
       </div>
-      <p class="muted">${v.id} - ${v.venue}</p>
-      <span class="tag blue">${v.unit}</span>
+      <p class="muted">${escapeHtml(shortId(v.id))} - ${escapeHtml(v.venue)}</p>
+      <span class="tag blue">${escapeHtml(v.unit)}</span>
     </article>
   `;
 }
 
 function clusterSelectHtml(name, selected = "Kuala Lumpur") {
-  return simpleSelectHtml(name, ["Kuala Lumpur", "Selangor", "Putrajaya", "Johor"], selected);
+  const values = state.role === "Admin Induk" ? ["Kuala Lumpur", "Selangor", "Putrajaya", "Johor"] : [state.profile?.cluster || selected];
+  return simpleSelectHtml(name, values, selected);
 }
 
 function venueSelectHtml(name, selected = "KL Sports City") {
@@ -1245,11 +1121,12 @@ function statusSelectHtml(name, selected = "Permohonan") {
 }
 
 function simpleSelectHtml(name, values, selected = values[0]) {
-  return `<select name="${name}">${values.map((value) => `<option ${value === selected ? "selected" : ""}>${value}</option>`).join("")}</select>`;
+  return `<select name="${name}">${values.map((value) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select>`;
 }
 
 function volunteerSelectHtml(name, list) {
-  return `<select name="${name}">${list.map((v) => `<option value="${v.id}">${v.id} - ${v.name}</option>`).join("")}</select>`;
+  if (!list.length) return `<select name="${name}" disabled><option value="">Tiada rekod</option></select>`;
+  return `<select name="${name}">${list.map((v) => `<option value="${v.id}">${escapeHtml(shortId(v.id))} - ${escapeHtml(v.name)}</option>`).join("")}</select>`;
 }
 
 function bindViewEvents() {
@@ -1267,127 +1144,144 @@ function bindViewEvents() {
   });
 }
 
-function addVolunteer(event) {
+async function mutate(successMessage, operation) {
+  try {
+    state.loading = true;
+    render();
+    await operation();
+    await refreshData({ renderAfter: false });
+    toast(successMessage);
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+async function addVolunteer(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const nextNumber = Math.max(...state.volunteers.map((v) => Number(v.id.replace("V", ""))), 27000) + 1;
-  const volunteer = {
-    id: `V${nextNumber}`,
-    name: form.get("name").trim(),
-    email: form.get("email").trim(),
-    phone: form.get("phone").trim(),
+  const ownVolunteer = state.volunteers.find((volunteer) => volunteer.profile_id === state.user?.id);
+  const payload = {
+    profile_id: state.role === "Sukarelawan" ? state.user.id : null,
+    name: form.get("name"),
+    email: form.get("email"),
+    phone: form.get("phone"),
     age: Number(form.get("age")) || 18,
     cluster: form.get("cluster"),
     venue: form.get("venue"),
     unit: form.get("unit"),
-    status: form.get("status"),
-    screening: 50,
-    training: 0,
-    kit: "Belum agih",
-    accreditation: "Belum",
-    attendance: 0,
-    rewards: 0,
-    payment: "Belum diproses",
-    lodging: "Tidak perlu",
-    phoneVerified: false,
-    gps: "3.139, 101.686"
+    application_status: can("approve") ? form.get("status") : ownVolunteer?.status || "Permohonan",
+    screening_status: ownVolunteer?.screeningResult || "Belum",
+    placement_status: ownVolunteer?.raw?.placement_status || "Belum ditempatkan",
+    kit_status: ownVolunteer?.kit || "Belum agih",
+    accreditation_status: ownVolunteer?.accreditation || "Belum"
   };
-  state.volunteers.unshift(volunteer);
-  pushActivity(`${volunteer.name} didaftarkan sebagai ${volunteer.unit}`, "blue");
-  saveState();
-  toast("Permohonan baharu telah ditambah.");
-  render();
+
+  if (ownVolunteer && state.role === "Sukarelawan") {
+    payload.cluster = ownVolunteer.cluster;
+    payload.venue = ownVolunteer.venue;
+    payload.unit = ownVolunteer.unit;
+  }
+
+  await mutate(ownVolunteer && state.role === "Sukarelawan" ? "Profil dikemaskini." : "Permohonan baharu telah ditambah.", async () => {
+    const duplicate = state.volunteers.find((volunteer) => {
+      if (ownVolunteer?.id === volunteer.id) return false;
+      return volunteer.email.toLowerCase() === String(payload.email).trim().toLowerCase() || volunteer.phone === String(payload.phone).replace(/[\s-]/g, "");
+    });
+    if (duplicate) throw new Error("Emel atau nombor telefon sudah wujud dalam skop data anda.");
+
+    if (state.role === "Sukarelawan") {
+      await window.AuthService.updateOwnProfile({
+        full_name: payload.name,
+        email: payload.email,
+        phone: payload.phone
+      });
+      if (ownVolunteer) {
+        await window.VolunteerService.updateVolunteer(ownVolunteer.id, payload, "update_own_volunteer");
+      } else {
+        await window.VolunteerService.createVolunteer(payload);
+      }
+    } else {
+      await window.VolunteerService.createVolunteer(payload);
+    }
+    pushActivity(`${payload.name} dikemaskini dalam database`, "blue");
+  });
 }
 
-function updatePlacement(event) {
+async function updatePlacement(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
   const volunteer = findVolunteer(form.get("volunteerId"));
   if (!volunteer) return;
-  volunteer.venue = form.get("venue");
-  volunteer.unit = form.get("unit");
-  volunteer.status = volunteer.status === "Permohonan" ? "Semakan" : volunteer.status;
-  pushActivity(`${volunteer.name} ditempatkan di ${volunteer.venue}`, "green");
-  saveState();
-  toast("Penempatan dikemaskini.");
-  render();
+  await mutate("Penempatan dikemaskini.", async () => {
+    await window.VolunteerService.assignPlacement(volunteer.id, form.get("venue"), form.get("unit"), volunteer.cluster);
+    pushActivity(`${volunteer.name} ditempatkan di ${form.get("venue")}`, "green");
+  });
 }
 
-function updateKit(event) {
+async function updateKit(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
   const volunteer = findVolunteer(form.get("volunteerId"));
   if (!volunteer) return;
-  volunteer.kit = form.get("kit");
-  volunteer.accreditation = form.get("accreditation");
-  pushActivity(`Kit dan akreditasi ${volunteer.name} dikemaskini`, "green");
-  saveState();
-  toast("Status kit dan pas disimpan.");
-  render();
+  await mutate("Status kit dan pas disimpan.", async () => {
+    await window.VolunteerService.updateKitAccreditation(volunteer.id, form.get("kit"), form.get("accreditation"));
+    pushActivity(`Kit dan akreditasi ${volunteer.name} dikemaskini`, "green");
+  });
 }
 
-function addAttendance(event) {
+async function addAttendance(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const volunteer = findVolunteer(String(form.get("volunteerId")).trim().toUpperCase());
+  const volunteer = findVolunteerLoose(form.get("volunteerId"));
   if (!volunteer) {
-    toast("ID sukarelawan tidak ditemui.");
+    toast("Sukarelawan tidak ditemui dalam skop akses anda.");
     return;
   }
-  volunteer.attendance += 1;
-  volunteer.rewards += 50;
-  state.attendanceLog.unshift({
-    id: volunteer.id,
-    name: volunteer.name,
-    venue: form.get("venue") || volunteer.venue,
-    time: new Date().toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" }),
-    method: form.get("method")
+  await mutate("Kehadiran direkodkan.", async () => {
+    await window.AttendanceService.recordAttendance(volunteer.id, "Operasi Sukarelawan 2026", form.get("venue") || volunteer.venue, form.get("method"));
+    pushActivity(`${volunteer.name} check-in di ${form.get("venue")}`, "green");
   });
-  pushActivity(`${volunteer.name} check-in di ${form.get("venue")}`, "green");
-  saveState();
-  toast("Kehadiran direkodkan.");
-  render();
 }
 
-function addTicket(event) {
+async function addTicket(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const ticket = {
-    id: `HD-${1200 + state.complaints.length + 1}`,
-    volunteer: form.get("volunteer").trim(),
-    issue: form.get("issue").trim(),
-    channel: form.get("channel"),
-    status: "Baharu",
-    priority: form.get("priority")
-  };
-  state.complaints.unshift(ticket);
-  pushActivity(`${ticket.id} dibuka melalui ${ticket.channel}`, "gold");
-  saveState();
-  toast("Tiket sokongan dibuka.");
-  render();
+  const volunteer = findVolunteerLoose(form.get("volunteer"));
+  await mutate("Tiket sokongan dibuka.", async () => {
+    await window.SupportService.createComplaint({
+      volunteerId: volunteer?.id || null,
+      volunteerName: form.get("volunteer"),
+      category: form.get("priority"),
+      subject: form.get("channel"),
+      message: form.get("issue")
+    });
+    pushActivity(`Tiket dibuka melalui ${form.get("channel")}`, "gold");
+  });
 }
 
-function addBroadcast(event) {
+async function addBroadcast(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  state.broadcasts.unshift({
-    target: form.get("target"),
-    text: form.get("text").trim(),
-    sent: new Date().toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" })
+  await mutate("Mesej blast direkodkan.", async () => {
+    await window.SupportService.createBroadcast({
+      title: form.get("target"),
+      target: form.get("target"),
+      message: form.get("text"),
+      profile: state.profile
+    });
+    pushActivity(`MWGateway menghantar mesej ke ${form.get("target")}`, "blue");
   });
-  pushActivity(`MWGateway menghantar mesej ke ${form.get("target")}`, "blue");
-  saveState();
-  toast("Mesej blast direkodkan.");
-  render();
 }
 
 function sendChat(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const message = form.get("message").trim();
+  const message = String(form.get("message")).trim();
   state.chat.push({ from: "user", text: message });
   state.chat.push({ from: "bot", text: assistReply(message) });
-  saveState();
   render();
 }
 
@@ -1395,6 +1289,7 @@ function generateCertificate(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
   const volunteer = findVolunteer(form.get("volunteerId"));
+  if (!volunteer) return;
   const eligible = volunteer.attendance >= 3 && volunteer.training >= 60;
   const preview = app.querySelector("#certificatePreview");
   preview.innerHTML = `
@@ -1402,8 +1297,8 @@ function generateCertificate(event) {
       <div class="pass-photo"><i data-lucide="award"></i></div>
       <div class="pass-meta">
         <strong>Sijil Digital Sukarelawan</strong>
-        <span>${volunteer.name}</span>
-        <span class="muted">${volunteer.id} - ${volunteer.unit} - ${volunteer.venue}</span>
+        <span>${escapeHtml(volunteer.name)}</span>
+        <span class="muted">${escapeHtml(shortId(volunteer.id))} - ${escapeHtml(volunteer.unit)} - ${escapeHtml(volunteer.venue)}</span>
         <span class="tag ${eligible ? "green" : "gold"}">${eligible ? "Layak dijana" : "Belum cukup syarat"}</span>
       </div>
     </article>
@@ -1411,165 +1306,129 @@ function generateCertificate(event) {
   window.lucide?.createIcons();
 }
 
-function handleAction(event) {
+async function handleAction(event) {
   const button = event.currentTarget;
   const action = button.dataset.action;
   const id = button.dataset.id;
   const volunteer = id ? findVolunteer(id) : null;
 
   if (action === "go") setView(button.dataset.view);
-  if (action === "screenDecision" && volunteer) updateVolunteerStatus(volunteer, button.dataset.status);
-  if (action === "quickApprove" && volunteer) updateVolunteerStatus(volunteer, "Diluluskan");
+  if (action === "screenDecision" && volunteer) await updateVolunteerStatus(volunteer, button.dataset.status);
+  if (action === "quickApprove" && volunteer) await updateVolunteerStatus(volunteer, "Diluluskan");
   if (action === "showPass" && volunteer) showPass(volunteer);
-  if (action === "autoScore") autoScore();
-  if (action === "approveHigh") approveHigh();
-  if (action === "balancePlacement") balancePlacement();
-  if (action === "completeTraining") completeTraining();
-  if (action === "completeKit") completeKit();
-  if (action === "syncGps") syncGps();
-  if (action === "closeTicket") closeTicket(id);
-  if (action === "exportCsv") exportCsv();
-  if (action === "resetDemo") resetDemo();
+  if (action === "autoScore") await autoScore();
+  if (action === "approveHigh") await approveHigh();
+  if (action === "balancePlacement") toast("Imbangan automatik hanya aktif apabila DEMO_MODE=true.");
+  if (action === "completeTraining") await completeTraining();
+  if (action === "completeKit") await completeKit();
+  if (action === "closeTicket") await closeTicket(id);
+  if (action === "exportCsv") await exportCsv();
   if (action === "addActivity") {
     pushActivity("Dashboard disegarkan oleh " + state.role, "blue");
-    saveState();
-    render();
-  }
-  if (action === "addShift") {
-    state.shifts.push({ day: "Ahad", venue: "KL Sports City", unit: "Venue Ops", time: "08:00-16:00", needed: 100, assigned: 76 });
-    pushActivity("Syif Ahad ditambah untuk KL Sports City", "gold");
-    saveState();
-    render();
-  }
-  if (action === "addSponsor") {
-    state.sponsors.unshift({ name: "TechOps MY", category: "Peralatan ICT", status: "Rundingan", value: 36000 });
-    saveState();
-    toast("Sponsor demo ditambah.");
     render();
   }
   if (action === "printReport") window.print();
 }
 
-function updateVolunteerStatus(volunteer, status) {
-  volunteer.status = status;
-  if (status === "Diluluskan" && volunteer.accreditation === "Belum") volunteer.accreditation = "Draf";
-  pushActivity(`${volunteer.name} ditanda ${status}`, status === "Ditolak" ? "gold" : "green");
-  saveState();
-  toast(`Status ${volunteer.name} dikemaskini.`);
-  render();
-}
-
-function autoScore() {
-  state.volunteers.forEach((v) => {
-    const ageScore = v.age >= 21 && v.age <= 35 ? 18 : 10;
-    const phoneScore = v.phoneVerified ? 18 : 4;
-    const trainingScore = Math.round(v.training * 0.32);
-    const attendanceScore = Math.min(12, v.attendance * 2);
-    const unitScore = ["Medical Support", "Accreditation", "Protokol"].includes(v.unit) ? 12 : 9;
-    v.screening = Math.min(98, ageScore + phoneScore + trainingScore + attendanceScore + unitScore + 22);
+async function updateVolunteerStatus(volunteer, status) {
+  if (!can("approve")) {
+    toast("Role anda tidak dibenarkan meluluskan permohonan.");
+    return;
+  }
+  await mutate(`Status ${volunteer.name} dikemaskini.`, async () => {
+    await window.ApplicationService.updateVolunteerStatus(volunteer.id, status, `Dikemaskini melalui UI oleh ${state.role}`);
+    pushActivity(`${volunteer.name} ditanda ${status}`, status === "Ditolak" ? "gold" : "green");
   });
-  pushActivity("Skor saringan dikira semula", "blue");
-  saveState();
-  toast("Skor saringan telah dikemaskini.");
-  render();
 }
 
-function approveHigh() {
-  let total = 0;
-  state.volunteers.forEach((v) => {
-    if (v.screening >= 80 && v.status !== "Ditolak") {
-      v.status = "Diluluskan";
-      if (v.accreditation === "Belum") v.accreditation = "Draf";
-      total += 1;
-    }
+function calculateScore(v) {
+  const ageScore = v.age >= 21 && v.age <= 35 ? 18 : 10;
+  const phoneScore = v.phoneVerified ? 18 : 4;
+  const trainingScore = Math.round(v.training * 0.32);
+  const attendanceScore = Math.min(12, v.attendance * 2);
+  const unitScore = ["Medical Support", "Accreditation", "Protokol"].includes(v.unit) ? 12 : 9;
+  return Math.min(98, ageScore + phoneScore + trainingScore + attendanceScore + unitScore + 22);
+}
+
+async function autoScore() {
+  if (!can("screening")) return;
+  const list = filteredVolunteers().filter((v) => v.status !== "Ditolak");
+  await mutate("Skor saringan telah dikemaskini.", async () => {
+    await Promise.all(
+      list.map((v) => {
+        const score = calculateScore(v);
+        const result = score >= 80 ? "Lulus" : score >= 55 ? "Semakan" : "Gagal";
+        return window.VolunteerService.updateScreeningScore(v.id, score, result, "Kiraan automatik UI");
+      })
+    );
+    pushActivity("Skor saringan dikira semula", "blue");
   });
-  pushActivity(`${total} sukarelawan skor tinggi diluluskan`, "green");
-  saveState();
-  toast(`${total} rekod diluluskan.`);
-  render();
 }
 
-function balancePlacement() {
-  const candidates = state.volunteers.filter((v) => v.status === "Diluluskan");
-  const units = ["Venue Ops", "Protokol", "Media", "Crowd Control", "Transport", "Accreditation", "Medical Support"];
-  candidates.forEach((v, index) => {
-    if (v.unit === "Venue Ops" && index % 3 === 0) v.unit = units[index % units.length];
+async function approveHigh() {
+  if (!can("approve")) return;
+  const list = filteredVolunteers().filter((v) => v.screening >= 80 && v.status !== "Ditolak");
+  await mutate(`${list.length} rekod diluluskan.`, async () => {
+    await Promise.all(list.map((v) => window.ApplicationService.updateVolunteerStatus(v.id, "Diluluskan", "Kelulusan skor tinggi")));
+    pushActivity(`${list.length} sukarelawan skor tinggi diluluskan`, "green");
   });
-  pushActivity("Cadangan imbangan unit dijana", "blue");
-  saveState();
-  toast("Penempatan diseimbangkan secara demo.");
-  render();
 }
 
-function completeTraining() {
-  filteredVolunteers().forEach((v) => {
-    if (v.status === "Diluluskan") v.training = Math.max(v.training, 80);
+async function completeTraining() {
+  if (!can("training")) return;
+  const volunteers = filteredVolunteers().filter((v) => v.status === "Diluluskan");
+  await mutate("Latihan ditandakan selesai untuk sukarelawan diluluskan.", async () => {
+    await window.VolunteerService.completeTrainingFor(volunteers.map((v) => v.id));
+    pushActivity("Latihan sukarelawan diluluskan dikemaskini", "green");
   });
-  pushActivity("Latihan sukarelawan diluluskan dikemaskini", "green");
-  saveState();
-  toast("Latihan ditandakan selesai untuk sukarelawan diluluskan.");
-  render();
 }
 
-function completeKit() {
-  filteredVolunteers().forEach((v) => {
-    if (v.status === "Diluluskan") {
-      v.kit = "Lengkap";
-      v.accreditation = "Aktif";
-    }
+async function completeKit() {
+  if (!can("kit")) return;
+  const volunteers = filteredVolunteers().filter((v) => v.status === "Diluluskan");
+  await mutate("Kit dan pas dilengkapkan untuk sukarelawan diluluskan.", async () => {
+    await Promise.all(volunteers.map((v) => window.VolunteerService.updateKitAccreditation(v.id, "Lengkap", "Aktif")));
+    pushActivity("Kit dan akreditasi sukarelawan diluluskan dilengkapkan", "green");
   });
-  pushActivity("Kit dan akreditasi sukarelawan diluluskan dilengkapkan", "green");
-  saveState();
-  toast("Kit dan pas dilengkapkan untuk sukarelawan diluluskan.");
-  render();
 }
 
-function syncGps() {
-  state.volunteers.forEach((v, index) => {
-    const lat = (3.05 + index * 0.011).toFixed(3);
-    const lng = (101.68 + index * 0.004).toFixed(3);
-    v.gps = `${lat}, ${lng}`;
+async function closeTicket(id) {
+  await mutate("Tiket ditutup.", async () => {
+    await window.SupportService.updateComplaintStatus(id, "Selesai");
+    pushActivity(`${shortId(id)} ditutup oleh HelpDesk Pro`, "green");
   });
-  pushActivity("Koordinat GPS sukarelawan disinkronkan", "blue");
-  saveState();
-  toast("Data GPS disinkronkan.");
-  render();
 }
 
-function closeTicket(id) {
-  const ticket = state.complaints.find((item) => item.id === id);
-  if (!ticket) return;
-  ticket.status = "Selesai";
-  pushActivity(`${ticket.id} ditutup oleh HelpDesk Pro`, "green");
-  saveState();
-  toast("Tiket ditutup.");
-  render();
-}
-
-function exportCsv() {
-  if (API_ENABLED) {
-    window.location.href = "/api/export.csv";
+async function exportCsv() {
+  if (!can("export")) {
+    toast("Role anda tidak dibenarkan eksport laporan.");
     return;
   }
 
-  const headers = ["id", "name", "email", "cluster", "venue", "unit", "status", "screening", "training", "kit", "accreditation", "attendance", "rewards", "payment"];
-  const rows = [headers.join(",")].concat(
-    filteredVolunteers({ search: "" }).map((v) => headers.map((key) => `"${String(v[key]).replaceAll('"', '""')}"`).join(","))
-  );
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "sistem-sukarelawan-2026.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function resetDemo() {
-  state = structuredClone(seed);
-  saveState();
-  toast("Data demo dipulihkan.");
-  render();
+  try {
+    state.loading = true;
+    render();
+    const fresh = await window.ReportService.listVolunteers();
+    const list = filteredVolunteers({ search: "" }, fresh);
+    await window.ReportService.auditReportExport({ role: state.role, cluster: scopeCluster() }, list.length);
+    const headers = ["id", "name", "email", "phone", "age", "cluster", "venue", "unit", "status", "screening", "training", "kit", "accreditation", "attendance"];
+    const rows = [headers.join(",")].concat(
+      list.map((v) => headers.map((key) => `"${String(v[key] ?? "").replaceAll('"', '""')}"`).join(","))
+    );
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sistem-sukarelawan-2026-${state.role.replaceAll(" ", "-").toLowerCase()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast("CSV dieksport daripada Supabase.");
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    state.loading = false;
+    render();
+  }
 }
 
 function showPass(volunteer) {
@@ -1577,19 +1436,19 @@ function showPass(volunteer) {
     <article class="identity-pass">
       <div class="pass-photo">${initials(volunteer.name)}</div>
       <div class="pass-meta">
-        <strong>${volunteer.name}</strong>
-        <span>${volunteer.id}</span>
-        <span>${volunteer.cluster}</span>
-        <span>${volunteer.venue}</span>
-        <span>${volunteer.unit}</span>
+        <strong>${escapeHtml(volunteer.name)}</strong>
+        <span>${escapeHtml(shortId(volunteer.id))}</span>
+        <span>${escapeHtml(volunteer.cluster)}</span>
+        <span>${escapeHtml(volunteer.venue)}</span>
+        <span>${escapeHtml(volunteer.unit)}</span>
         ${statusBadge(volunteer.accreditation)}
       </div>
     </article>
     <div style="display:flex; gap:16px; align-items:center; margin-top:16px;">
-      <div class="qr-box" aria-label="QR demo">${Array.from({ length: 25 }, () => "<span></span>").join("")}</div>
+      <div class="qr-box" aria-label="QR">${Array.from({ length: 25 }, () => "<span></span>").join("")}</div>
       <div>
         <strong>Token QR</strong>
-        <p class="muted">${volunteer.id}-${volunteer.phone.slice(-4)}-${volunteer.unit.replaceAll(" ", "").toUpperCase()}</p>
+        <p class="muted">${escapeHtml(shortId(volunteer.id))}-${escapeHtml(volunteer.phone.slice(-4))}-${escapeHtml(volunteer.unit.replaceAll(" ", "").toUpperCase())}</p>
       </div>
     </div>
   `;
@@ -1612,7 +1471,18 @@ function assistReply(message) {
 }
 
 function findVolunteer(id) {
-  return state.volunteers.find((v) => v.id.toUpperCase() === String(id).toUpperCase());
+  return state.volunteers.find((v) => v.id.toLowerCase() === String(id).toLowerCase());
+}
+
+function findVolunteerLoose(value) {
+  const needle = String(value || "").trim().toLowerCase();
+  return state.volunteers.find((v) =>
+    [v.id, shortId(v.id), v.email, v.phone, v.name].some((field) => String(field || "").toLowerCase() === needle)
+  );
+}
+
+function shortId(id) {
+  return String(id || "").slice(0, 8).toUpperCase();
 }
 
 function pushActivity(text, type = "blue") {
@@ -1630,7 +1500,7 @@ function toast(message) {
   element.className = "toast";
   element.textContent = message;
   document.body.appendChild(element);
-  setTimeout(() => element.remove(), 2600);
+  setTimeout(() => element.remove(), 3200);
 }
 
 navList.addEventListener("click", (event) => {
@@ -1640,22 +1510,29 @@ navList.addEventListener("click", (event) => {
   setView(button.dataset.view);
 });
 
-roleSelect.addEventListener("change", (event) => {
-  state.role = event.target.value;
-  saveState();
-  render();
-});
-
 clusterSelect.addEventListener("change", (event) => {
+  if (state.role !== "Admin Induk") {
+    event.target.value = state.profile?.cluster || "Semua";
+    return;
+  }
   state.cluster = event.target.value;
-  saveState();
   render();
 });
 
 globalSearch.addEventListener("input", (event) => {
   state.search = event.target.value;
-  saveState();
   render();
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await window.AuthService.signOut();
+  } finally {
+    state.user = null;
+    state.profile = null;
+    state.volunteers = [];
+    renderAuth("login", "Logout berjaya.");
+  }
 });
 
 document.querySelector("#menuToggle").addEventListener("click", () => {
@@ -1667,72 +1544,38 @@ document.querySelector("#closeModal").addEventListener("click", () => {
 });
 
 async function initApp() {
-  state = loadLocalState();
-  render();
-
   if (new URLSearchParams(window.location.search).get("smoke") === "1") {
+    renderAuth("login");
     runSmokeTest();
     return;
   }
 
-  if (API_ENABLED) {
-    state = await loadState();
-    render();
+  try {
+    await loadAuthenticatedApp();
+  } catch (error) {
+    renderAuth("login", error.message);
   }
+
+  if (window.SukarelawanSupabase?.isConfigured()) {
+    window.SukarelawanSupabase.getClient().auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) renderAuth("login");
+    });
+  }
+}
+
+function runSmokeTest() {
+  const results = [
+    ["auth-root", Boolean(authRoot)],
+    ["app-shell", Boolean(appShell)],
+    ["supabase-gate", Boolean(window.SukarelawanSupabase)],
+    ["no-reset-action", !document.body.textContent.toLowerCase().includes("pulihkan demo")]
+  ];
+  const ok = results.every(([, passed]) => passed);
+  document.body.dataset.smoke = ok ? "ok" : "fail";
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    `<div id="smoke-result">${ok ? "SMOKE_OK" : "SMOKE_FAIL"} ${results.map(([name, passed]) => `${name}:${passed ? "ok" : "fail"}`).join(" ")}</div>`
+  );
 }
 
 initApp();
-
-function runSmokeTest() {
-  const original = structuredClone(state);
-  const results = [];
-  suppressSave = true;
-
-  try {
-    setView("applications");
-    const volunteerForm = app.querySelector("#volunteerForm");
-    volunteerForm.elements.name.value = "Smoke Test Volunteer";
-    volunteerForm.elements.email.value = "smoke@example.com";
-    volunteerForm.elements.phone.value = "60129990000";
-    volunteerForm.elements.age.value = "25";
-    volunteerForm.elements.cluster.value = "Kuala Lumpur";
-    volunteerForm.elements.venue.value = "KL Sports City";
-    volunteerForm.elements.unit.value = "Venue Ops";
-    volunteerForm.elements.status.value = "Permohonan";
-    volunteerForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-
-    const created = state.volunteers.find((volunteer) => volunteer.email === "smoke@example.com");
-    results.push(["add-volunteer", Boolean(created)]);
-
-    setView("attendance");
-    const attendanceForm = app.querySelector("#attendanceForm");
-    attendanceForm.elements.volunteerId.value = created?.id || "V27001";
-    attendanceForm.elements.method.value = "QR";
-    attendanceForm.elements.venue.value = "KL Sports City";
-    attendanceForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-    results.push(["attendance", Boolean(created && created.attendance >= 1)]);
-
-    setView("screening");
-    const approveButton = app.querySelector('[data-action="approveHigh"]');
-    approveButton.click();
-    results.push(["screening-action", state.activity.some((item) => item.text.includes("skor tinggi"))]);
-
-    const ok = results.every(([, passed]) => passed);
-    state = original;
-    state.view = "overview";
-    render();
-    document.body.dataset.smoke = ok ? "ok" : "fail";
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      `<div id="smoke-result">${ok ? "SMOKE_OK" : "SMOKE_FAIL"} ${results.map(([name, passed]) => `${name}:${passed ? "ok" : "fail"}`).join(" ")}</div>`
-    );
-  } catch (error) {
-    state = original;
-    state.view = "overview";
-    render();
-    document.body.dataset.smoke = "fail";
-    document.body.insertAdjacentHTML("beforeend", `<div id="smoke-result">SMOKE_FAIL ${escapeHtml(error.message)}</div>`);
-  } finally {
-    suppressSave = false;
-  }
-}

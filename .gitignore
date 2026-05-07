@@ -8,6 +8,10 @@ server.err.log
 data.json
 __pycache__/
 chrome-*/
+.env
+.env.*
+supabase-service-role*
+service-role*
 
 # OS/editor noise
 .DS_Store

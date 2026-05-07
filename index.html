@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sistem Sukarelawan 2026</title>
     <link rel="stylesheet" href="styles.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="icons.js"></script>
+    <script defer src="supabase-config.js"></script>
+    <script defer src="supabase-client.js"></script>
+    <script defer src="auth.js"></script>
+    <script defer src="services.js"></script>
     <script defer src="app.js"></script>
   </head>
   <body>
-    <div class="app-shell">
+    <div id="authRoot" class="auth-root" hidden></div>
+
+    <div class="app-shell" id="appShell" hidden>
       <aside class="sidebar" aria-label="Navigasi utama">
         <div class="brand">
           <div class="brand-mark">S</div>
@@ -78,24 +85,22 @@
 
           <div class="top-controls">
             <label>
-              <span>Peranan</span>
-              <select id="roleSelect">
-                <option>Admin Induk</option>
-                <option>Admin Kluster</option>
-                <option>Admin Venue</option>
-                <option>Ketua Unit</option>
-                <option>Sukarelawan</option>
-              </select>
+              <span>Peranan sebenar</span>
+              <input id="roleDisplay" type="text" readonly value="-">
             </label>
             <label>
-              <span>Kluster</span>
+              <span>Skop kluster</span>
               <select id="clusterSelect">
+                <option>Semua</option>
                 <option>Kuala Lumpur</option>
                 <option>Selangor</option>
                 <option>Putrajaya</option>
                 <option>Johor</option>
               </select>
             </label>
+            <button class="ghost-button" id="logoutButton" type="button">
+              <i data-lucide="log-out"></i>Logout
+            </button>
           </div>
         </header>
 
