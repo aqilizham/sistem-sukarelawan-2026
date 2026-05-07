@@ -12,8 +12,8 @@ create table if not exists public.profiles (
   cluster text,
   venue text,
   unit text,
-  status text not null default 'Aktif'
-    check (status in ('Aktif', 'Digantung', 'Tidak aktif')),
+  status text not null default 'Menunggu Kelulusan'
+    check (status in ('Aktif', 'Menunggu Kelulusan', 'Digantung', 'Ditolak')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint profiles_email_format check (email is null or email ~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
@@ -210,7 +210,7 @@ begin
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
     nullif(regexp_replace(coalesce(new.raw_user_meta_data->>'phone', ''), '[[:space:]-]', '', 'g'), ''),
     'Sukarelawan',
-    'Aktif'
+    'Menunggu Kelulusan'
   )
   on conflict (id) do update
   set email = excluded.email,
@@ -327,7 +327,7 @@ begin
   if tg_op = 'INSERT' then
     new.id := auth.uid();
     new.role := 'Sukarelawan';
-    new.status := coalesce(new.status, 'Aktif');
+    new.status := 'Menunggu Kelulusan';
     return new;
   end if;
 

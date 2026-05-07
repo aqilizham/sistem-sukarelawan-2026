@@ -24,9 +24,18 @@ const state = {
   loading: false,
   error: "",
   volunteers: [],
+  users: [],
   attendanceLog: [],
   complaints: [],
   broadcasts: [],
+  userFilters: {
+    search: "",
+    role: "Semua",
+    status: "Semua",
+    cluster: "Semua",
+    venue: "Semua",
+    unit: "Semua"
+  },
   activity: [
     { time: "08:10", text: "Sistem production-ready dimuatkan dengan Supabase", type: "green" },
     { time: "09:35", text: "Role pengguna dibaca daripada profiles.role", type: "blue" },
@@ -59,7 +68,8 @@ const views = {
   attendance: { title: "Kehadiran", kicker: "QR, manual, dan pemantauan GPS" },
   support: { title: "Aduan & Sokongan", kicker: "HelpDesk Pro dan MWGateway" },
   addons: { title: "Sistem Tambahan", kicker: "StaySmart, AssistAI, SponsorHub, Rewards+, PayGate" },
-  reports: { title: "Sijil & Laporan", kicker: "Analitik, eksport, dan sijil digital" }
+  reports: { title: "Sijil & Laporan", kicker: "Analitik, eksport, dan sijil digital" },
+  users: { title: "Pengurusan Pengguna", kicker: "Kelulusan akses dan skop pengguna" }
 };
 
 const statusClass = {
@@ -67,8 +77,11 @@ const statusClass = {
   Semakan: "review",
   Permohonan: "pending",
   Ditolak: "rejected",
+  "Menunggu Kelulusan": "pending",
+  Pending: "pending",
   Lengkap: "done",
   Aktif: "done",
+  Digantung: "risk",
   Draf: "review",
   Belum: "pending",
   "Belum lengkap": "pending",
@@ -84,7 +97,7 @@ const statusClass = {
 };
 
 const rolePermissions = {
-  "Admin Induk": new Set(["createVolunteer", "approve", "screening", "placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
+  "Admin Induk": new Set(["createVolunteer", "approve", "screening", "placement", "training", "kit", "attendance", "support", "broadcast", "export", "manageUsers"]),
   "Admin Kluster": new Set(["createVolunteer", "approve", "screening", "placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
   "Admin Venue": new Set(["placement", "training", "kit", "attendance", "support", "broadcast", "export"]),
   "Ketua Unit": new Set(["training", "attendance", "support", "export"]),
@@ -114,6 +127,22 @@ function filteredVolunteers(options = {}, source = state.volunteers) {
       .join(" ")
       .toLowerCase();
     return matchesCluster && (!search || haystack.includes(search));
+  });
+}
+
+function filteredUsers(source = state.users) {
+  const filters = state.userFilters;
+  const search = String(filters.search || "").trim().toLowerCase();
+
+  return source.filter((user) => {
+    const haystack = [user.full_name, user.email, user.phone].join(" ").toLowerCase();
+    const matchesSearch = !search || haystack.includes(search);
+    const matchesRole = filters.role === "Semua" || user.role === filters.role;
+    const matchesStatus = filters.status === "Semua" || user.status === filters.status;
+    const matchesCluster = filters.cluster === "Semua" || (user.cluster || "") === filters.cluster;
+    const matchesVenue = filters.venue === "Semua" || (user.venue || "") === filters.venue;
+    const matchesUnit = filters.unit === "Semua" || (user.unit || "") === filters.unit;
+    return matchesSearch && matchesRole && matchesStatus && matchesCluster && matchesVenue && matchesUnit;
   });
 }
 
@@ -224,6 +253,7 @@ function renderAuth(mode = "login", message = "") {
         }
         <label>Emel<input name="email" type="email" required autocomplete="email"></label>
         <label>Kata laluan<input name="password" type="password" required minlength="8" autocomplete="${isRegister ? "new-password" : "current-password"}"></label>
+        ${isRegister ? `<p class="muted">Akaun baharu akan didaftarkan sebagai Sukarelawan dan menunggu kelulusan Admin Induk.</p>` : ""}
         <button class="button" type="submit"><i data-lucide="${isRegister ? "user-plus" : "log-in"}"></i>${isRegister ? "Register" : "Login"}</button>
       </form>
     </section>
@@ -259,7 +289,7 @@ function bindAuthEvents() {
       if (result.session) {
         await loadAuthenticatedApp();
       } else {
-        renderAuth("login", "Pendaftaran berjaya. Sila semak emel jika pengesahan emel diaktifkan.");
+        renderAuth("login", "Pendaftaran berjaya. Akaun anda didaftarkan sebagai Sukarelawan dan menunggu kelulusan admin.");
       }
     });
   });
@@ -289,6 +319,9 @@ async function loadAuthenticatedApp() {
   state.profile = await window.AuthService.loadProfile(session.user);
   state.role = state.profile.role || "Sukarelawan";
   state.cluster = state.role === "Admin Induk" ? "Semua" : state.profile.cluster || "Semua";
+  if (state.view === "users" && !can("manageUsers")) {
+    state.view = "overview";
+  }
   authRoot.hidden = true;
   appShell.hidden = false;
   await refreshData({ renderAfter: false });
@@ -307,6 +340,7 @@ async function refreshData({ renderAfter = true } = {}) {
     state.attendanceLog = data.attendanceLog;
     state.complaints = data.complaints;
     state.broadcasts = data.broadcasts;
+    state.users = can("manageUsers") ? await window.ProfileService.listProfiles() : [];
   } catch (error) {
     state.error = error.message;
   } finally {
@@ -322,9 +356,10 @@ function render() {
   viewTitle.textContent = view.title;
   viewKicker.textContent = view.kicker;
   roleDisplay.value = state.role;
+  document.querySelector("#usersNavItem")?.toggleAttribute("hidden", !can("manageUsers"));
   clusterSelect.value = state.role === "Admin Induk" ? state.cluster : state.profile?.cluster || "Semua";
   clusterSelect.disabled = state.role !== "Admin Induk";
-  globalSearch.value = state.search;
+  globalSearch.value = state.view === "users" ? state.userFilters.search : state.search;
 
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === state.view);
@@ -340,7 +375,8 @@ function render() {
     attendance: renderAttendance,
     support: renderSupport,
     addons: renderAddons,
-    reports: renderReports
+    reports: renderReports,
+    users: renderUsers
   }[state.view];
 
   app.innerHTML = `${renderSystemState()}${renderer ? renderer() : renderOverview()}`;
@@ -1031,6 +1067,98 @@ function renderReports() {
   `;
 }
 
+function renderUsers() {
+  if (!can("manageUsers")) {
+    return `<section class="surface"><div class="empty">Modul ini hanya boleh diakses oleh Admin Induk.</div></section>`;
+  }
+
+  const list = filteredUsers();
+  const roles = window.ProfileService?.roles || ["Admin Induk", "Admin Kluster", "Admin Venue", "Ketua Unit", "Sukarelawan"];
+  const statuses = window.ProfileService?.statuses || ["Aktif", "Menunggu Kelulusan", "Digantung", "Ditolak"];
+  const pending = state.users.filter((user) => user.status === "Menunggu Kelulusan" || user.status === "Pending").length;
+  const active = state.users.filter((user) => user.status === "Aktif").length;
+  const suspended = state.users.filter((user) => user.status === "Digantung" || user.status === "Ditolak").length;
+
+  return `
+    <section class="grid metrics">
+      ${metricCard("Jumlah pengguna", state.users.length.toLocaleString("ms-MY"), "public.profiles", "blue", [28, 39, 48, 61, 73, 88])}
+      ${metricCard("Menunggu kelulusan", pending.toLocaleString("ms-MY"), "perlu tindakan", "gold", [12, 18, 27, 31, 43, 54])}
+      ${metricCard("Pengguna aktif", active.toLocaleString("ms-MY"), "boleh login", "green", [36, 44, 58, 64, 73, 82])}
+      ${metricCard("Digantung / ditolak", suspended.toLocaleString("ms-MY"), "sekatan akses", "violet", [8, 12, 15, 20, 24, 29])}
+    </section>
+
+    <section class="surface">
+      <div class="surface-head">
+        <div>
+          <h2>Pengurusan Pengguna</h2>
+          <p>Admin Induk boleh meluluskan pengguna baharu, menukar role, dan menetapkan skop kluster, venue, serta unit.</p>
+        </div>
+        <div class="row-actions">
+          <span class="pill">${list.length} dipapar</span>
+          <button class="ghost-button" data-action="resetUserFilters"><i data-lucide="rotate-ccw"></i>Reset filter</button>
+        </div>
+      </div>
+
+      <form class="field-grid user-filter-grid" id="userFiltersForm">
+        <div class="field"><label>Carian<input name="search" placeholder="Nama, emel, telefon" value="${escapeHtml(state.userFilters.search)}"></label></div>
+        <div class="field"><label>Role${simpleSelectHtml("role", ["Semua", ...roles], state.userFilters.role)}</label></div>
+        <div class="field"><label>Status${simpleSelectHtml("status", ["Semua", ...statuses], state.userFilters.status)}</label></div>
+        <div class="field"><label>Kluster${simpleSelectHtml("cluster", ["Semua", ...uniqueValues(state.users, "cluster")], state.userFilters.cluster)}</label></div>
+        <div class="field"><label>Venue${simpleSelectHtml("venue", ["Semua", ...uniqueValues(state.users, "venue")], state.userFilters.venue)}</label></div>
+        <div class="field"><label>Unit${simpleSelectHtml("unit", ["Semua", ...uniqueValues(state.users, "unit")], state.userFilters.unit)}</label></div>
+        <div class="field wide"><button class="ghost-button" type="submit"><i data-lucide="filter"></i>Tapis senarai</button></div>
+      </form>
+
+      ${userManagementTable(list, roles, statuses)}
+    </section>
+  `;
+}
+
+function userManagementTable(list, roles, statuses) {
+  if (!list.length) return `<div class="empty">Tiada pengguna ditemui untuk penapis semasa.</div>`;
+
+  return `
+    <div class="table-wrap">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Pengguna</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Kluster</th>
+            <th>Venue</th>
+            <th>Unit</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list
+            .map((user) => `
+              <tr data-user-row="${user.id}">
+                <td>
+                  <strong>${escapeHtml(user.full_name || "-")}</strong><br>
+                  <span class="muted">${escapeHtml(user.email || "-")}</span><br>
+                  <span class="muted">${escapeHtml(user.phone || "-")}</span>
+                </td>
+                <td>${simpleSelectHtml("role", roles, user.role, `data-user-field="role"`)}</td>
+                <td>${simpleSelectHtml("status", statuses, user.status || "Menunggu Kelulusan", `data-user-field="status"`)}</td>
+                <td><input data-user-field="cluster" value="${escapeHtml(user.cluster || "")}" placeholder="Contoh: Kuala Lumpur"></td>
+                <td><input data-user-field="venue" value="${escapeHtml(user.venue || "")}" placeholder="Contoh: KL Sports City"></td>
+                <td><input data-user-field="unit" value="${escapeHtml(user.unit || "")}" placeholder="Contoh: Venue Ops"></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="button" data-action="saveUserProfile" data-id="${user.id}"><i data-lucide="save"></i>Simpan</button>
+                  </div>
+                </td>
+              </tr>
+            `)
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function volunteerTable(list, mode = "default") {
   if (!list.length) return `<div class="empty">Tiada rekod untuk carian semasa.</div>`;
   return `
@@ -1120,8 +1248,16 @@ function statusSelectHtml(name, selected = "Permohonan") {
   return simpleSelectHtml(name, ["Permohonan", "Semakan", "Diluluskan", "Ditolak"], selected);
 }
 
-function simpleSelectHtml(name, values, selected = values[0]) {
-  return `<select name="${name}">${values.map((value) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select>`;
+function uniqueValues(list, key) {
+  return [...new Set(list.map((item) => cleanScopeValue(item[key])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ms"));
+}
+
+function cleanScopeValue(value) {
+  return String(value || "").trim();
+}
+
+function simpleSelectHtml(name, values, selected = values[0], extraAttrs = "") {
+  return `<select name="${name}" ${extraAttrs}>${values.map((value) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select>`;
 }
 
 function volunteerSelectHtml(name, list) {
@@ -1138,6 +1274,7 @@ function bindViewEvents() {
   app.querySelector("#broadcastForm")?.addEventListener("submit", addBroadcast);
   app.querySelector("#chatForm")?.addEventListener("submit", sendChat);
   app.querySelector("#certificateForm")?.addEventListener("submit", generateCertificate);
+  app.querySelector("#userFiltersForm")?.addEventListener("submit", syncUserFilters);
 
   app.querySelectorAll("[data-action]").forEach((button) => {
     button.addEventListener("click", handleAction);
@@ -1306,6 +1443,47 @@ function generateCertificate(event) {
   window.lucide?.createIcons();
 }
 
+function syncUserFilters(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  state.userFilters = {
+    search: String(form.get("search") || ""),
+    role: String(form.get("role") || "Semua"),
+    status: String(form.get("status") || "Semua"),
+    cluster: String(form.get("cluster") || "Semua"),
+    venue: String(form.get("venue") || "Semua"),
+    unit: String(form.get("unit") || "Semua")
+  };
+  render();
+}
+
+async function saveManagedProfile(id) {
+  if (!can("manageUsers")) {
+    toast("Hanya Admin Induk boleh mengurus pengguna.");
+    return;
+  }
+
+  const row = app.querySelector(`[data-user-row="${id}"]`);
+  if (!row) {
+    toast("Baris pengguna tidak ditemui.");
+    return;
+  }
+
+  const payload = {
+    role: row.querySelector('[data-user-field="role"]')?.value,
+    status: row.querySelector('[data-user-field="status"]')?.value,
+    cluster: row.querySelector('[data-user-field="cluster"]')?.value,
+    venue: row.querySelector('[data-user-field="venue"]')?.value,
+    unit: row.querySelector('[data-user-field="unit"]')?.value
+  };
+
+  const profile = state.users.find((user) => user.id === id);
+  await mutate(`Profil ${profile?.full_name || "pengguna"} disimpan.`, async () => {
+    await window.ProfileService.updateManagedProfile(id, payload);
+    pushActivity(`Profil pengguna ${profile?.full_name || shortId(id)} dikemaskini`, "blue");
+  });
+}
+
 async function handleAction(event) {
   const button = event.currentTarget;
   const action = button.dataset.action;
@@ -1323,6 +1501,11 @@ async function handleAction(event) {
   if (action === "completeKit") await completeKit();
   if (action === "closeTicket") await closeTicket(id);
   if (action === "exportCsv") await exportCsv();
+  if (action === "saveUserProfile") await saveManagedProfile(id);
+  if (action === "resetUserFilters") {
+    state.userFilters = { search: "", role: "Semua", status: "Semua", cluster: "Semua", venue: "Semua", unit: "Semua" };
+    render();
+  }
   if (action === "addActivity") {
     pushActivity("Dashboard disegarkan oleh " + state.role, "blue");
     render();
@@ -1520,7 +1703,11 @@ clusterSelect.addEventListener("change", (event) => {
 });
 
 globalSearch.addEventListener("input", (event) => {
-  state.search = event.target.value;
+  if (state.view === "users") {
+    state.userFilters.search = event.target.value;
+  } else {
+    state.search = event.target.value;
+  }
   render();
 });
 
@@ -1531,6 +1718,8 @@ logoutButton.addEventListener("click", async () => {
     state.user = null;
     state.profile = null;
     state.volunteers = [];
+    state.users = [];
+    state.userFilters = { search: "", role: "Semua", status: "Semua", cluster: "Semua", venue: "Semua", unit: "Semua" };
     renderAuth("login", "Logout berjaya.");
   }
 });

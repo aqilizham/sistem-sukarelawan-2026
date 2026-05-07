@@ -70,7 +70,7 @@
       email: user.email,
       phone: cleanPhone(user.user_metadata?.phone),
       role: "Sukarelawan",
-      status: "Aktif"
+      status: "Menunggu Kelulusan"
     };
 
     const { data: created, error: insertError } = await db()

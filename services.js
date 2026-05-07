@@ -4,6 +4,8 @@
   const APPLICATION_STATUSES = ["Permohonan", "Semakan", "Diluluskan", "Ditolak"];
   const KIT_STATUSES = ["Belum agih", "Sebahagian", "Belum lengkap", "Lengkap"];
   const ACCREDITATION_STATUSES = ["Belum", "Draf", "Aktif"];
+  const PROFILE_ROLES = ["Admin Induk", "Admin Kluster", "Admin Venue", "Ketua Unit", "Sukarelawan"];
+  const PROFILE_STATUSES = ["Aktif", "Menunggu Kelulusan", "Digantung", "Ditolak"];
 
   function db() {
     return window.SukarelawanSupabase.getClient();
@@ -75,6 +77,20 @@
     if (!KIT_STATUSES.includes(payload.kit_status)) throw new Error("Status kit tidak sah.");
     if (!ACCREDITATION_STATUSES.includes(payload.accreditation_status)) throw new Error("Status akreditasi tidak sah.");
 
+    return payload;
+  }
+
+  function validateProfileUpdate(input) {
+    const payload = {
+      role: cleanText(input.role),
+      status: cleanText(input.status),
+      cluster: cleanText(input.cluster) || null,
+      venue: cleanText(input.venue) || null,
+      unit: cleanText(input.unit) || null
+    };
+
+    if (!PROFILE_ROLES.includes(payload.role)) throw new Error("Role pengguna tidak sah.");
+    if (!PROFILE_STATUSES.includes(payload.status)) throw new Error("Status pengguna tidak sah.");
     return payload;
   }
 
@@ -217,6 +233,16 @@
         ? new Date(row.created_at).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" })
         : "-"
     }));
+  }
+
+  async function listProfiles() {
+    return run(
+      db()
+        .from("profiles")
+        .select("id, full_name, email, phone, role, cluster, venue, unit, status, created_at, updated_at")
+        .order("created_at", { ascending: false }),
+      "Gagal baca senarai pengguna"
+    );
   }
 
   async function loadOperationalData() {
@@ -527,6 +553,15 @@
     await recordAudit("export_report", "volunteers", null, null, { scope, total_rows: totalRows });
   }
 
+  async function updateManagedProfile(id, fields) {
+    const payload = validateProfileUpdate(fields);
+    const updated = await run(
+      db().from("profiles").update(payload).eq("id", id).select("*").single(),
+      "Gagal kemaskini profil pengguna"
+    );
+    return updated;
+  }
+
   window.VolunteerService = {
     assignPlacement,
     completeTrainingFor,
@@ -552,6 +587,13 @@
   window.ReportService = {
     auditReportExport,
     listVolunteers
+  };
+
+  window.ProfileService = {
+    listProfiles,
+    updateManagedProfile,
+    roles: PROFILE_ROLES,
+    statuses: PROFILE_STATUSES
   };
 
   window.AuditService = {

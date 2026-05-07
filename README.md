@@ -27,6 +27,7 @@ Live URL:
 - `app.js`: UI dan event binding.
 - `supabase/schema.sql`: schema, validation constraints, trigger, helper function.
 - `supabase/rls-policies.sql`: semua RLS policy.
+- `supabase/user-management-migration.sql`: migration tambahan untuk approval status pengguna dan modul Pengurusan Pengguna.
 - `supabase/seed-demo-data.sql`: optional seed data pusat.
 - `.github/workflows/deploy-pages.yml`: deploy static site ke GitHub Pages.
 - `AUDIT.md`: audit repo asal dan localStorage lama.
@@ -43,7 +44,10 @@ Live URL:
    -- 2
    -- copy/paste supabase/rls-policies.sql
 
-   -- 3 optional
+   -- 3 jika anda upgrade repo lama yang sudah pernah deploy
+   -- copy/paste supabase/user-management-migration.sql
+
+   -- 4 optional
    -- copy/paste supabase/seed-demo-data.sql
    ```
 4. Pergi ke Authentication > URL Configuration.
@@ -86,7 +90,8 @@ Buka:
 ## Create Admin Pertama
 
 1. Buka app dan register user pertama.
-2. Di Supabase SQL Editor, promote user itu:
+2. User baharu akan dicipta sebagai `Sukarelawan` dengan status `Menunggu Kelulusan`.
+3. Di Supabase SQL Editor, promote user itu:
 
 ```sql
 update public.profiles
@@ -118,7 +123,7 @@ Selepas itu logout/login semula. Role sebenar akan dipaparkan di topbar.
 
 | Role | Akses |
 | --- | --- |
-| Admin Induk | Lihat/urus semua data, approve/reject, export semua, urus user melalui Supabase/profile. |
+| Admin Induk | Lihat/urus semua data, approve/reject, export semua, akses modul `Pengurusan Pengguna` untuk tukar role/status/cluster/venue/unit. |
 | Admin Kluster | Lihat/urus data kluster sendiri, review permohonan kluster, export kluster. |
 | Admin Venue | Lihat data venue sendiri, urus penempatan, latihan, attendance, kit venue. |
 | Ketua Unit | Lihat unit sendiri, rekod latihan/kehadiran, export unit. Tidak ada delete utama. |
@@ -157,7 +162,10 @@ Hosting tidak dipindahkan secara automatik; GitHub Pages masih laluan default.
 
 - User login berjaya.
 - Register user baru berjaya.
+- User baru didaftarkan sebagai `Sukarelawan` dengan status `Menunggu Kelulusan`.
 - Promote user pertama kepada Admin Induk melalui SQL.
+- Admin Induk buka modul `Pengurusan Pengguna` dan nampak user baru.
+- Admin Induk tukar status ke `Aktif`, tetapkan role, cluster, venue, dan unit.
 - Admin create volunteer.
 - Sukarelawan submit/update profil sendiri.
 - Admin approve/reject application.

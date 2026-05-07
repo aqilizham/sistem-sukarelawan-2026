@@ -623,6 +623,15 @@ tr:last-child td {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.user-filter-grid {
+  margin-bottom: 14px;
+}
+
+.user-table input,
+.user-table select {
+  min-width: 140px;
+}
+
 .field.wide {
   grid-column: 1 / -1;
 }
