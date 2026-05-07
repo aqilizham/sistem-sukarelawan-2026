@@ -105,6 +105,16 @@ button {
   gap: 12px;
 }
 
+.blocked-account {
+  display: grid;
+  gap: 12px;
+}
+
+.blocked-account strong {
+  display: block;
+  margin-top: 2px;
+}
+
 .auth-form label {
   display: grid;
   gap: 5px;

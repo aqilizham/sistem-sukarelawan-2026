@@ -1,5 +1,60 @@
 begin;
 
+create or replace function public.current_status()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select status from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.is_active_account()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(public.current_status(), '') = 'Aktif'
+$$;
+
+create or replace function public.can_access_volunteer(
+  volunteer_cluster text,
+  volunteer_venue text,
+  volunteer_unit text,
+  volunteer_profile_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    public.is_active_account()
+    and (
+      public.is_admin_induk()
+      or (
+        public.current_role() = 'Admin Kluster'
+        and volunteer_cluster is not distinct from public.current_cluster()
+      )
+      or (
+        public.current_role() = 'Admin Venue'
+        and volunteer_venue is not distinct from public.current_venue()
+      )
+      or (
+        public.current_role() = 'Ketua Unit'
+        and volunteer_unit is not distinct from public.current_unit()
+      )
+      or (
+        public.current_role() = 'Sukarelawan'
+        and volunteer_profile_id = auth.uid()
+      )
+    )
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.volunteers enable row level security;
 alter table public.applications enable row level security;
@@ -99,10 +154,10 @@ with check (
     where v.id = applications.volunteer_id
       and public.is_active_account()
       and (
-          public.is_admin_induk()
-          or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
-          or (public.current_role() = 'Sukarelawan' and v.profile_id = auth.uid())
-        )
+        public.is_admin_induk()
+        or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
+        or (public.current_role() = 'Sukarelawan' and v.profile_id = auth.uid())
+      )
   )
 );
 
@@ -252,11 +307,11 @@ with check (
     where v.id = training_records.volunteer_id
       and public.is_active_account()
       and (
-          public.is_admin_induk()
-          or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
-          or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
-          or (public.current_role() = 'Ketua Unit' and v.unit is not distinct from public.current_unit())
-        )
+        public.is_admin_induk()
+        or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
+        or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
+        or (public.current_role() = 'Ketua Unit' and v.unit is not distinct from public.current_unit())
+      )
   )
 );
 
@@ -280,11 +335,11 @@ with check (
     where v.id = attendance_logs.volunteer_id
       and public.is_active_account()
       and (
-          public.is_admin_induk()
-          or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
-          or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
-          or (public.current_role() = 'Ketua Unit' and v.unit is not distinct from public.current_unit())
-        )
+        public.is_admin_induk()
+        or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
+        or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
+        or (public.current_role() = 'Ketua Unit' and v.unit is not distinct from public.current_unit())
+      )
   )
 );
 
@@ -308,10 +363,10 @@ with check (
     where v.id = kit_accreditation.volunteer_id
       and public.is_active_account()
       and (
-          public.is_admin_induk()
-          or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
-          or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
-        )
+        public.is_admin_induk()
+        or (public.current_role() = 'Admin Kluster' and v.cluster is not distinct from public.current_cluster())
+        or (public.current_role() = 'Admin Venue' and v.venue is not distinct from public.current_venue())
+      )
   )
 );
 
@@ -341,13 +396,13 @@ with check (
   public.is_active_account()
   and submitted_by = auth.uid()
   and (
-      volunteer_id is null
-      or exists (
-        select 1 from public.volunteers v
-        where v.id = complaints.volunteer_id
-          and public.can_access_volunteer(v.cluster, v.venue, v.unit, v.profile_id)
-      )
+    volunteer_id is null
+    or exists (
+      select 1 from public.volunteers v
+      where v.id = complaints.volunteer_id
+        and public.can_access_volunteer(v.cluster, v.venue, v.unit, v.profile_id)
     )
+  )
 );
 
 drop policy if exists complaints_update_staff_scope on public.complaints;

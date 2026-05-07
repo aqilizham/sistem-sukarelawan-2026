@@ -28,6 +28,7 @@ Live URL:
 - `supabase/schema.sql`: schema, validation constraints, trigger, helper function.
 - `supabase/rls-policies.sql`: semua RLS policy.
 - `supabase/user-management-migration.sql`: migration tambahan untuk approval status pengguna dan modul Pengurusan Pengguna.
+- `supabase/account-status-access-migration.sql`: migration tambahan untuk sekatan login/dashboard mengikut `profiles.status`.
 - `supabase/seed-demo-data.sql`: optional seed data pusat.
 - `.github/workflows/deploy-pages.yml`: deploy static site ke GitHub Pages.
 - `AUDIT.md`: audit repo asal dan localStorage lama.
@@ -47,7 +48,10 @@ Live URL:
    -- 3 jika anda upgrade repo lama yang sudah pernah deploy
    -- copy/paste supabase/user-management-migration.sql
 
-   -- 4 optional
+   -- 4 jika anda mahu enforce sekatan akses untuk akaun bukan Aktif
+   -- copy/paste supabase/account-status-access-migration.sql
+
+   -- 5 optional
    -- copy/paste supabase/seed-demo-data.sql
    ```
 4. Pergi ke Authentication > URL Configuration.
@@ -166,6 +170,8 @@ Hosting tidak dipindahkan secara automatik; GitHub Pages masih laluan default.
 - Promote user pertama kepada Admin Induk melalui SQL.
 - Admin Induk buka modul `Pengurusan Pengguna` dan nampak user baru.
 - Admin Induk tukar status ke `Aktif`, tetapkan role, cluster, venue, dan unit.
+- Set user kepada `Digantung`, login sebagai user itu, dan sahkan dashboard disekat dengan skrin status akaun.
+- Tukar semula status user kepada `Aktif`, logout/login semula, dan sahkan dashboard boleh diakses.
 - Admin create volunteer.
 - Sukarelawan submit/update profil sendiri.
 - Admin approve/reject application.

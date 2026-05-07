@@ -262,6 +262,66 @@ function renderAuth(mode = "login", message = "") {
   window.lucide?.createIcons();
 }
 
+function accountStatusMessage(status) {
+  if (status === "Menunggu Kelulusan") return "Akaun anda sedang menunggu kelulusan admin.";
+  if (status === "Digantung") return "Akaun anda telah digantung. Sila hubungi urusetia.";
+  if (status === "Ditolak") return "Pendaftaran anda tidak diluluskan.";
+  return "Akses ke sistem tidak dibenarkan buat masa ini.";
+}
+
+function renderBlockedAccount(profile) {
+  appShell.hidden = true;
+  authRoot.hidden = false;
+  state.volunteers = [];
+  state.users = [];
+  state.attendanceLog = [];
+  state.complaints = [];
+  state.broadcasts = [];
+
+  authRoot.innerHTML = `
+    <section class="auth-card">
+      <div class="brand auth-brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <strong>Sistem Sukarelawan</strong>
+          <span>2026</span>
+        </div>
+      </div>
+      <div class="alert">
+        <strong>Status akaun: ${escapeHtml(profile.status || "-")}</strong>
+        <p>${escapeHtml(accountStatusMessage(profile.status))}</p>
+      </div>
+      <div class="surface blocked-account">
+        <div>
+          <span class="muted">Nama</span>
+          <strong>${escapeHtml(profile.full_name || "-")}</strong>
+        </div>
+        <div>
+          <span class="muted">Emel</span>
+          <strong>${escapeHtml(profile.email || state.user?.email || "-")}</strong>
+        </div>
+        <div>
+          <span class="muted">Status semasa</span>
+          <div>${statusBadge(profile.status || "-")}</div>
+        </div>
+      </div>
+      <button class="button" type="button" id="blockedLogoutButton"><i data-lucide="log-out"></i>Logout</button>
+    </section>
+  `;
+
+  authRoot.querySelector("#blockedLogoutButton")?.addEventListener("click", async () => {
+    try {
+      await window.AuthService.signOut();
+    } finally {
+      state.user = null;
+      state.profile = null;
+      renderAuth("login", "Logout berjaya.");
+    }
+  });
+
+  window.lucide?.createIcons();
+}
+
 function bindAuthEvents() {
   authRoot.querySelectorAll("[data-auth-mode]").forEach((button) => {
     button.addEventListener("click", () => renderAuth(button.dataset.authMode));
@@ -319,6 +379,10 @@ async function loadAuthenticatedApp() {
   state.profile = await window.AuthService.loadProfile(session.user);
   state.role = state.profile.role || "Sukarelawan";
   state.cluster = state.role === "Admin Induk" ? "Semua" : state.profile.cluster || "Semua";
+  if (state.profile.status !== "Aktif") {
+    renderBlockedAccount(state.profile);
+    return;
+  }
   if (state.view === "users" && !can("manageUsers")) {
     state.view = "overview";
   }

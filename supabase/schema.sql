@@ -237,6 +237,16 @@ as $$
   select role from public.profiles where id = auth.uid()
 $$;
 
+create or replace function public.current_status()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select status from public.profiles where id = auth.uid()
+$$;
+
 create or replace function public.current_cluster()
 returns text
 language sql
@@ -277,6 +287,16 @@ as $$
   select coalesce(public.current_role(), '') = 'Admin Induk'
 $$;
 
+create or replace function public.is_active_account()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(public.current_status(), '') = 'Aktif'
+$$;
+
 create or replace function public.can_access_volunteer(
   volunteer_cluster text,
   volunteer_venue text,
@@ -290,7 +310,9 @@ security definer
 set search_path = public
 as $$
   select
-    public.is_admin_induk()
+    public.is_active_account()
+    and (
+      public.is_admin_induk()
     or (
       public.current_role() = 'Admin Kluster'
       and volunteer_cluster is not distinct from public.current_cluster()
@@ -306,6 +328,7 @@ as $$
     or (
       public.current_role() = 'Sukarelawan'
       and volunteer_profile_id = auth.uid()
+    )
     )
 $$;
 
