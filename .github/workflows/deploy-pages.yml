@@ -28,10 +28,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate runtime Supabase config
+      - name: Generate runtime Supabase config when repository variables are set
         shell: bash
         run: |
-          cat > supabase-config.js <<EOF
+          if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
+            cat > supabase-config.js <<EOF
           window.SUKARELAWAN_SUPABASE_CONFIG = {
             url: "${SUPABASE_URL}",
             anonKey: "${SUPABASE_ANON_KEY}"
@@ -39,6 +40,9 @@ jobs:
 
           window.SUKARELAWAN_DEMO_MODE = false;
           EOF
+          else
+            echo "Using committed supabase-config.js"
+          fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
