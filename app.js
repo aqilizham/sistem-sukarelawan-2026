@@ -146,6 +146,13 @@ function filteredUsers(source = state.users) {
   });
 }
 
+function hasActiveUserFilters() {
+  return Object.entries(state.userFilters).some(([key, value]) => {
+    const emptyValue = key === "search" ? "" : "Semua";
+    return value !== emptyValue;
+  });
+}
+
 function countBy(list, key) {
   return list.reduce((acc, item) => {
     const value = typeof key === "function" ? key(item) : item[key];
@@ -1202,34 +1209,43 @@ function renderUsers() {
   const suspended = state.users.filter((user) => user.status === "Digantung" || user.status === "Ditolak").length;
 
   return `
-    <section class="grid metrics">
+    <section class="grid metrics users-metrics">
       ${metricCard("Jumlah pengguna", state.users.length.toLocaleString("ms-MY"), "public.profiles", "blue", [28, 39, 48, 61, 73, 88])}
       ${metricCard("Menunggu kelulusan", pending.toLocaleString("ms-MY"), "perlu tindakan", "gold", [12, 18, 27, 31, 43, 54])}
       ${metricCard("Pengguna aktif", active.toLocaleString("ms-MY"), "boleh login", "green", [36, 44, 58, 64, 73, 82])}
       ${metricCard("Digantung / ditolak", suspended.toLocaleString("ms-MY"), "sekatan akses", "violet", [8, 12, 15, 20, 24, 29])}
     </section>
 
-    <section class="surface">
+    <section class="surface user-management-surface">
       <div class="surface-head">
         <div>
           <h2>Pengurusan Pengguna</h2>
           <p>Admin Induk boleh meluluskan pengguna baharu, menukar role, dan menetapkan skop kluster, venue, serta unit.</p>
         </div>
-        <div class="row-actions">
+        <div class="row-actions user-head-actions">
           <span class="pill">${list.length} dipapar</span>
           <button class="ghost-button" data-action="resetUserFilters"><i data-lucide="rotate-ccw"></i>Reset filter</button>
         </div>
       </div>
 
-      <form class="field-grid user-filter-grid" id="userFiltersForm">
-        <div class="field"><label>Carian<input name="search" placeholder="Nama, emel, telefon" value="${escapeHtml(state.userFilters.search)}"></label></div>
-        <div class="field"><label>Role${simpleSelectHtml("role", ["Semua", ...roles], state.userFilters.role)}</label></div>
-        <div class="field"><label>Status${simpleSelectHtml("status", ["Semua", ...statuses], state.userFilters.status)}</label></div>
-        <div class="field"><label>Kluster${simpleSelectHtml("cluster", ["Semua", ...uniqueValues(state.users, "cluster")], state.userFilters.cluster)}</label></div>
-        <div class="field"><label>Venue${simpleSelectHtml("venue", ["Semua", ...uniqueValues(state.users, "venue")], state.userFilters.venue)}</label></div>
-        <div class="field"><label>Unit${simpleSelectHtml("unit", ["Semua", ...uniqueValues(state.users, "unit")], state.userFilters.unit)}</label></div>
-        <div class="field wide"><button class="ghost-button" type="submit"><i data-lucide="filter"></i>Tapis senarai</button></div>
-      </form>
+      <details class="user-filter-panel" ${window.matchMedia?.("(min-width: 821px)")?.matches || hasActiveUserFilters() ? "open" : ""}>
+        <summary>
+          <span><i data-lucide="sliders-horizontal"></i>Tapis pengguna</span>
+          <span class="pill">${list.length} dipapar</span>
+        </summary>
+        <form class="field-grid user-filter-grid" id="userFiltersForm">
+          <div class="field"><label>Carian<input name="search" placeholder="Nama, emel, telefon" value="${escapeHtml(state.userFilters.search)}"></label></div>
+          <div class="field"><label>Role${simpleSelectHtml("role", ["Semua", ...roles], state.userFilters.role)}</label></div>
+          <div class="field"><label>Status${simpleSelectHtml("status", ["Semua", ...statuses], state.userFilters.status)}</label></div>
+          <div class="field"><label>Kluster${simpleSelectHtml("cluster", ["Semua", ...uniqueValues(state.users, "cluster")], state.userFilters.cluster)}</label></div>
+          <div class="field"><label>Venue${simpleSelectHtml("venue", ["Semua", ...uniqueValues(state.users, "venue")], state.userFilters.venue)}</label></div>
+          <div class="field"><label>Unit${simpleSelectHtml("unit", ["Semua", ...uniqueValues(state.users, "unit")], state.userFilters.unit)}</label></div>
+          <div class="field user-filter-actions">
+            <button class="button" type="submit"><i data-lucide="filter"></i>Tapis</button>
+            <button class="ghost-button" type="button" data-action="resetUserFilters"><i data-lucide="rotate-ccw"></i>Reset</button>
+          </div>
+        </form>
+      </details>
 
       ${userManagementTable(list, roles, statuses)}
     </section>
@@ -1240,7 +1256,7 @@ function userManagementTable(list, roles, statuses) {
   if (!list.length) return `<div class="empty">Tiada pengguna ditemui untuk penapis semasa.</div>`;
 
   return `
-    <div class="table-wrap">
+    <div class="table-wrap user-table-wrap">
       <table class="user-table">
         <thead>
           <tr>
@@ -1256,7 +1272,7 @@ function userManagementTable(list, roles, statuses) {
         <tbody>
           ${list
             .map((user) => `
-              <tr data-user-row="${user.id}">
+              <tr data-user-record="${user.id}">
                 <td>
                   <strong>${escapeHtml(user.full_name || "-")}</strong><br>
                   <span class="muted">${escapeHtml(user.email || "-")}</span><br>
@@ -1269,7 +1285,7 @@ function userManagementTable(list, roles, statuses) {
                 <td><input data-user-field="unit" value="${escapeHtml(user.unit || "")}" placeholder="Contoh: Venue Ops"></td>
                 <td>
                   <div class="row-actions">
-                    <button class="button" data-action="saveUserProfile" data-id="${user.id}"><i data-lucide="save"></i>Simpan</button>
+                    <button class="button" type="button" data-action="saveUserProfile" data-id="${user.id}"><i data-lucide="save"></i>Simpan</button>
                   </div>
                 </td>
               </tr>
@@ -1277,6 +1293,30 @@ function userManagementTable(list, roles, statuses) {
             .join("")}
         </tbody>
       </table>
+    </div>
+    <div class="user-mobile-list">
+      ${list
+        .map((user) => `
+          <article class="user-card" data-user-record="${user.id}">
+            <div class="user-card-head">
+              <div>
+                <strong>${escapeHtml(user.full_name || "-")}</strong>
+                <span>${escapeHtml(user.email || "-")}</span>
+                <span>${escapeHtml(user.phone || "-")}</span>
+              </div>
+              ${statusBadge(user.status || "Menunggu Kelulusan")}
+            </div>
+            <div class="user-card-fields">
+              <div class="field"><label>Role${simpleSelectHtml("role", roles, user.role, `data-user-field="role"`)}</label></div>
+              <div class="field"><label>Status${simpleSelectHtml("status", statuses, user.status || "Menunggu Kelulusan", `data-user-field="status"`)}</label></div>
+              <div class="field"><label>Kluster<input data-user-field="cluster" value="${escapeHtml(user.cluster || "")}" placeholder="Contoh: Kuala Lumpur"></label></div>
+              <div class="field"><label>Venue<input data-user-field="venue" value="${escapeHtml(user.venue || "")}" placeholder="Contoh: KL Sports City"></label></div>
+              <div class="field"><label>Unit<input data-user-field="unit" value="${escapeHtml(user.unit || "")}" placeholder="Contoh: Venue Ops"></label></div>
+            </div>
+            <button class="button user-card-save" type="button" data-action="saveUserProfile" data-id="${user.id}"><i data-lucide="save"></i>Simpan</button>
+          </article>
+        `)
+        .join("")}
     </div>
   `;
 }
@@ -1579,15 +1619,15 @@ function syncUserFilters(event) {
   render();
 }
 
-async function saveManagedProfile(id) {
+async function saveManagedProfile(id, sourceButton) {
   if (!can("manageUsers")) {
     toast("Hanya Admin Induk boleh mengurus pengguna.");
     return;
   }
 
-  const row = app.querySelector(`[data-user-row="${id}"]`);
+  const row = sourceButton?.closest("[data-user-record]") || app.querySelector(`[data-user-record="${id}"]`);
   if (!row) {
-    toast("Baris pengguna tidak ditemui.");
+    toast("Kad pengguna tidak ditemui.");
     return;
   }
 
@@ -1623,7 +1663,7 @@ async function handleAction(event) {
   if (action === "completeKit") await completeKit();
   if (action === "closeTicket") await closeTicket(id);
   if (action === "exportCsv") await exportCsv();
-  if (action === "saveUserProfile") await saveManagedProfile(id);
+  if (action === "saveUserProfile") await saveManagedProfile(id, button);
   if (action === "resetUserFilters") {
     state.userFilters = { search: "", role: "Semua", status: "Semua", cluster: "Semua", venue: "Semua", unit: "Semua" };
     render();

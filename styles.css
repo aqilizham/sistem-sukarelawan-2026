@@ -696,9 +696,71 @@ tr:last-child td {
   margin-bottom: 14px;
 }
 
+.user-filter-panel {
+  margin-bottom: 14px;
+}
+
+.user-filter-panel summary {
+  display: none;
+}
+
+.user-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
 .user-table input,
 .user-table select {
   min-width: 140px;
+}
+
+.user-mobile-list {
+  display: none;
+}
+
+.user-card {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.user-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.user-card-head strong,
+.user-card-head span {
+  display: block;
+  min-width: 0;
+}
+
+.user-card-head strong {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.user-card-head span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.user-card-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.user-card-save {
+  width: 100%;
 }
 
 .field.wide {
@@ -1105,6 +1167,82 @@ tr:last-child td {
     align-items: stretch;
   }
 
+  .user-management-surface .surface-head {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .user-management-surface .surface-head p {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .user-head-actions .ghost-button {
+    display: none;
+  }
+
+  .user-filter-panel {
+    margin-bottom: 12px;
+  }
+
+  .user-filter-panel summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 42px;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+    font-weight: 750;
+  }
+
+  .user-filter-panel summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .user-filter-panel summary > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .user-filter-panel summary svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .user-filter-grid {
+    margin: 10px 0 0;
+  }
+
+  .user-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .user-table-wrap {
+    display: none;
+  }
+
+  .user-mobile-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .user-card-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .user-card-head .status {
+    justify-self: start;
+  }
+
   .top-controls {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1163,6 +1301,36 @@ tr:last-child td {
     gap: 10px;
   }
 
+  .users-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .users-metrics .metric-card {
+    min-height: 104px;
+    padding: 12px;
+  }
+
+  .users-metrics .metric-top {
+    font-size: 0.8rem;
+  }
+
+  .users-metrics .metric-value {
+    font-size: 1.55rem;
+  }
+
+  .users-metrics .metric-foot {
+    display: none;
+  }
+
+  .users-metrics .sparkline {
+    height: 28px;
+  }
+
+  .users-metrics .sparkline span {
+    width: 8px;
+  }
+
   .identity-pass {
     grid-template-columns: 72px minmax(0, 1fr);
   }
@@ -1211,12 +1379,59 @@ tr:last-child td {
     padding: 12px;
   }
 
+  .user-management-surface {
+    padding: 12px;
+  }
+
+  .user-management-surface h2 {
+    font-size: 1rem;
+  }
+
+  .user-management-surface .surface-head p {
+    font-size: 0.82rem;
+  }
+
   .metric-top {
     gap: 8px;
   }
 
   .metric-value {
     font-size: 1.72rem;
+  }
+
+  .users-metrics {
+    gap: 8px;
+  }
+
+  .users-metrics .metric-card {
+    min-height: 92px;
+    padding: 10px;
+  }
+
+  .users-metrics .metric-top {
+    font-size: 0.76rem;
+  }
+
+  .users-metrics .metric-value {
+    font-size: 1.4rem;
+  }
+
+  .users-metrics .sparkline {
+    height: 22px;
+    gap: 3px;
+  }
+
+  .users-metrics .sparkline span {
+    width: 7px;
+  }
+
+  .user-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .user-card-fields {
+    gap: 9px;
   }
 
   .bar-row {
