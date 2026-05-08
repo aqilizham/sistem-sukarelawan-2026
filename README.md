@@ -57,8 +57,11 @@ Live URL:
 4. Pergi ke Authentication > URL Configuration.
 5. Tambah Site URL:
    `https://aqilizham.github.io/sistem-sukarelawan-2026/`
-6. Tambah Redirect URL untuk local:
-   `http://localhost:8080/`
+6. Tambah Additional Redirect URLs:
+   `https://aqilizham.github.io/sistem-sukarelawan-2026/`
+   `https://aqilizham.github.io/sistem-sukarelawan-2026`
+
+Nota: link confirmation email mesti kembali ke path repo `/sistem-sukarelawan-2026/`, bukan ke `https://aqilizham.github.io/`.
 
 ## Config Frontend
 
@@ -192,6 +195,7 @@ Hosting tidak dipindahkan secara automatik; GitHub Pages masih laluan default.
 - `Akses ditolak oleh polisi keselamatan Supabase`: semak `profiles.role`, `cluster`, `venue`, `unit`, dan RLS policy.
 - Login berjaya tetapi data kosong: role mungkin `Sukarelawan` tanpa `volunteers.profile_id`, atau seed data belum dimasukkan.
 - Register tidak terus login: Supabase email confirmation mungkin aktif. Sahkan emel dahulu.
+- Confirmation email pergi ke GitHub Pages 404: semak Supabase Authentication URL Configuration dan pastikan Site URL serta Redirect URL menggunakan `https://aqilizham.github.io/sistem-sukarelawan-2026/`.
 - CSV kosong: data yang dieksport tertakluk kepada RLS dan skop role.
 
 ## Limitasi Semasa

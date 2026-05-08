@@ -1,4 +1,6 @@
 (function () {
+  const PRODUCTION_APP_URL = "https://aqilizham.github.io/sistem-sukarelawan-2026/";
+
   function db() {
     return window.SukarelawanSupabase.getClient();
   }
@@ -39,6 +41,7 @@
       email: cleanText(email).toLowerCase(),
       password,
       options: {
+        emailRedirectTo: PRODUCTION_APP_URL,
         data: {
           full_name: cleanText(fullName),
           phone: cleanPhone(phone)
@@ -105,6 +108,7 @@
   }
 
   window.AuthService = {
+    redirectUrl: PRODUCTION_APP_URL,
     getSession,
     loadProfile,
     signIn,

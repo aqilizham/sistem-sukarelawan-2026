@@ -27,12 +27,14 @@
 html {
   background: var(--bg);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   letter-spacing: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -53,6 +55,7 @@ button {
 .auth-root {
   display: grid;
   min-height: 100vh;
+  min-height: 100dvh;
   place-items: center;
   padding: 24px;
   background:
@@ -63,7 +66,8 @@ button {
 .auth-card {
   display: grid;
   gap: 18px;
-  width: min(100%, 440px);
+  width: min(440px, calc(100vw - 32px));
+  max-width: 100%;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -86,6 +90,7 @@ button {
 }
 
 .auth-tabs button {
+  min-width: 0;
   min-height: 36px;
   border: 0;
   border-radius: 6px;
@@ -169,11 +174,13 @@ button {
   top: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
   height: 100vh;
+  height: 100dvh;
   padding: 22px 16px;
   background: #17251f;
   color: #f7fbf7;
+  overflow: hidden;
 }
 
 .brand {
@@ -212,6 +219,11 @@ button {
 .nav-list {
   display: grid;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
 }
 
 .nav-item {
@@ -230,11 +242,15 @@ button {
 
 .nav-item svg,
 .icon-button svg,
+.button svg,
+.ghost-button svg,
+.danger-button svg,
 .search-box svg,
 .inline-icon svg {
   width: 18px;
   height: 18px;
   stroke-width: 2;
+  flex: 0 0 auto;
 }
 
 .nav-item:hover,
@@ -244,7 +260,7 @@ button {
 }
 
 .sidebar-foot {
-  margin-top: auto;
+  flex: 0 0 auto;
   padding: 14px;
   border: 1px solid #365348;
   border-radius: var(--radius);
@@ -323,6 +339,7 @@ h3 {
 .top-controls {
   display: flex;
   align-items: end;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -368,6 +385,7 @@ textarea {
   display: grid;
   gap: 18px;
   padding: 24px;
+  min-width: 0;
 }
 
 .toolbar {
@@ -587,8 +605,10 @@ textarea {
 
 .table-wrap {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -621,16 +641,17 @@ tr:last-child td {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
 }
 
 .field-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
 .field-grid.compact {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .user-filter-grid {
@@ -958,7 +979,7 @@ tr:last-child td {
   }
 
   .top-controls label {
-    flex: 1;
+    flex: 1 1 180px;
   }
 
   .grid.metrics,
@@ -970,7 +991,7 @@ tr:last-child td {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .app-shell {
     display: block;
   }
@@ -980,6 +1001,7 @@ tr:last-child td {
     inset: 0 auto 0 0;
     z-index: 30;
     width: min(280px, 84vw);
+    height: 100dvh;
     transform: translateX(-105%);
     transition: transform 180ms ease;
   }
@@ -1006,10 +1028,21 @@ tr:last-child td {
   .topbar {
     grid-template-columns: auto minmax(0, 1fr);
     padding: 12px;
+    gap: 10px;
   }
 
   .content {
     padding: 14px;
+  }
+
+  .auth-root {
+    place-items: start center;
+    padding: 14px;
+  }
+
+  .auth-card {
+    width: min(440px, calc(100vw - 40px));
+    padding: 16px;
   }
 
   .grid.metrics,
@@ -1021,6 +1054,21 @@ tr:last-child td {
   .field-grid.compact,
   .kanban {
     grid-template-columns: 1fr;
+  }
+
+  .surface-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top-controls {
+    align-items: stretch;
+  }
+
+  .top-controls label,
+  .top-controls button,
+  .row-actions > * {
+    flex: 1 1 100%;
   }
 
   .toolbar {
@@ -1036,5 +1084,58 @@ tr:last-child td {
 
   .bar-row {
     grid-template-columns: 100px minmax(0, 1fr) 44px;
+  }
+
+  .metric-card {
+    min-height: 120px;
+  }
+
+  .identity-pass {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .pass-photo {
+    width: 72px;
+    height: 92px;
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .topbar {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .page-title span {
+    font-size: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.18rem;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  .surface,
+  .metric-card,
+  .work-card,
+  .ticket,
+  .addon,
+  .timeline-item,
+  .identity-pass {
+    padding: 12px;
+  }
+
+  .bar-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .pill,
+  .status,
+  .tag {
+    white-space: normal;
   }
 }

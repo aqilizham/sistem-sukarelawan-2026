@@ -363,6 +363,61 @@ async function runAuthAction(action) {
   }
 }
 
+function getAuthRedirectParams() {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const query = new URLSearchParams(window.location.search);
+  const keys = ["access_token", "refresh_token", "type", "error", "error_description"];
+  const hasAuthParams = keys.some((key) => hash.has(key) || query.has(key));
+  if (!hasAuthParams) return null;
+
+  return {
+    accessToken: hash.get("access_token") || query.get("access_token") || "",
+    refreshToken: hash.get("refresh_token") || query.get("refresh_token") || "",
+    error: hash.get("error") || query.get("error") || "",
+    errorDescription: hash.get("error_description") || query.get("error_description") || "",
+    type: hash.get("type") || query.get("type") || ""
+  };
+}
+
+function cleanAuthRedirectUrl() {
+  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+  window.history.replaceState({}, document.title, cleanUrl);
+}
+
+async function handleAuthRedirect() {
+  const redirect = getAuthRedirectParams();
+  if (!redirect) return false;
+
+  if (redirect.error) {
+    cleanAuthRedirectUrl();
+    renderAuth("login", redirect.errorDescription || redirect.error);
+    return true;
+  }
+
+  if (!redirect.accessToken || !redirect.refreshToken) {
+    cleanAuthRedirectUrl();
+    renderAuth("login", "Emel berjaya disahkan. Sila login.");
+    return true;
+  }
+
+  try {
+    const session = await window.AuthService.getSession();
+    cleanAuthRedirectUrl();
+    if (session) {
+      await loadAuthenticatedApp();
+      return true;
+    }
+  } catch (error) {
+    cleanAuthRedirectUrl();
+    renderAuth("login", error.message);
+    return true;
+  }
+
+  cleanAuthRedirectUrl();
+  renderAuth("login", "Emel berjaya disahkan. Sila login.");
+  return true;
+}
+
 async function loadAuthenticatedApp() {
   if (!window.SukarelawanSupabase?.isConfigured()) {
     renderAuth("login");
@@ -1804,6 +1859,7 @@ async function initApp() {
   }
 
   try {
+    if (await handleAuthRedirect()) return;
     await loadAuthenticatedApp();
   } catch (error) {
     renderAuth("login", error.message);
