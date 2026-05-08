@@ -27,6 +27,15 @@
     return data.session || null;
   }
 
+  async function setSession({ accessToken, refreshToken }) {
+    const { data, error } = await db().auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error) throw new Error(friendlyAuthError(error));
+    return data.session || null;
+  }
+
   async function signIn(email, password) {
     const { data, error } = await db().auth.signInWithPassword({
       email: cleanText(email).toLowerCase(),
@@ -110,6 +119,7 @@
   window.AuthService = {
     redirectUrl: PRODUCTION_APP_URL,
     getSession,
+    setSession,
     loadProfile,
     signIn,
     signOut,

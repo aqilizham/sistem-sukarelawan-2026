@@ -401,7 +401,10 @@ async function handleAuthRedirect() {
   }
 
   try {
-    const session = await window.AuthService.getSession();
+    const session = await window.AuthService.setSession({
+      accessToken: redirect.accessToken,
+      refreshToken: redirect.refreshToken
+    });
     cleanAuthRedirectUrl();
     if (session) {
       await loadAuthenticatedApp();

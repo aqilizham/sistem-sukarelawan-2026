@@ -66,7 +66,7 @@ button {
 .auth-card {
   display: grid;
   gap: 18px;
-  width: min(440px, calc(100vw - 32px));
+  width: min(100%, 440px);
   max-width: 100%;
   padding: 22px;
   border: 1px solid var(--line);
@@ -97,6 +97,9 @@ button {
   background: transparent;
   color: var(--muted);
   font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .auth-tabs button.active {
@@ -218,11 +221,11 @@ button {
 
 .nav-list {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 2px;
+  padding: 2px 3px 2px 0;
   scrollbar-width: thin;
 }
 
@@ -231,8 +234,8 @@ button {
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 42px;
-  padding: 9px 10px;
+  min-height: 44px;
+  padding: 10px 10px;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -341,6 +344,10 @@ h3 {
   align-items: end;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.top-controls label {
+  min-width: 150px;
 }
 
 .top-controls label,
@@ -506,12 +513,15 @@ textarea {
   min-height: 26px;
   padding: 4px 9px;
   border-radius: 999px;
+  border: 1px solid transparent;
   font-size: 0.78rem;
   font-weight: 700;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
 .pill {
+  border-color: var(--line);
   background: var(--surface-soft);
   color: var(--ink);
 }
@@ -519,6 +529,7 @@ textarea {
 .status.approved,
 .status.done,
 .tag.green {
+  border-color: #b7dfd0;
   background: #e3f3ed;
   color: var(--green-dark);
 }
@@ -526,6 +537,7 @@ textarea {
 .status.pending,
 .status.review,
 .tag.gold {
+  border-color: #ead09c;
   background: var(--gold-soft);
   color: #7c520f;
 }
@@ -533,17 +545,20 @@ textarea {
 .status.rejected,
 .status.risk,
 .tag.red {
+  border-color: #edc4be;
   background: var(--red-soft);
   color: #8b2f22;
 }
 
 .status.info,
 .tag.blue {
+  border-color: #c4d8ea;
   background: var(--blue-soft);
   color: #214c78;
 }
 
 .tag.violet {
+  border-color: #d4cbed;
   background: var(--violet-soft);
   color: #493884;
 }
@@ -591,6 +606,28 @@ textarea {
   color: var(--ink);
 }
 
+#logoutButton {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-color: #cfd7d1;
+  background: rgb(255 255 255 / 72%);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+#logoutButton:hover {
+  border-color: var(--green);
+  background: #fff;
+  color: var(--green-dark);
+}
+
+#logoutButton svg {
+  width: 16px;
+  height: 16px;
+}
+
 .fallback-symbol {
   display: inline-flex;
   align-items: center;
@@ -606,6 +643,7 @@ textarea {
 .table-wrap {
   overflow-x: auto;
   max-width: 100%;
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   -webkit-overflow-scrolling: touch;
@@ -982,6 +1020,10 @@ tr:last-child td {
     flex: 1 1 180px;
   }
 
+  #logoutButton {
+    align-self: end;
+  }
+
   .grid.metrics,
   .grid.three,
   .grid.four-addon,
@@ -1002,6 +1044,7 @@ tr:last-child td {
     z-index: 30;
     width: min(280px, 84vw);
     height: 100dvh;
+    padding: 18px 14px;
     transform: translateX(-105%);
     transition: transform 180ms ease;
   }
@@ -1029,6 +1072,7 @@ tr:last-child td {
     grid-template-columns: auto minmax(0, 1fr);
     padding: 12px;
     gap: 10px;
+    align-items: start;
   }
 
   .content {
@@ -1041,7 +1085,7 @@ tr:last-child td {
   }
 
   .auth-card {
-    width: min(440px, calc(100vw - 40px));
+    width: min(100%, 440px);
     padding: 16px;
   }
 
@@ -1062,24 +1106,52 @@ tr:last-child td {
   }
 
   .top-controls {
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 8px;
   }
 
-  .top-controls label,
-  .top-controls button,
+  .top-controls label {
+    min-width: 0;
+  }
+
+  #logoutButton {
+    grid-column: 1 / -1;
+    justify-self: start;
+    width: auto;
+    min-height: 38px;
+    padding: 7px 11px;
+    background: transparent;
+  }
+
   .row-actions > * {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
   }
 
   .toolbar {
     align-items: stretch;
   }
 
-  .toolbar .actions,
+  .toolbar .actions {
+    width: 100%;
+  }
+
+  .toolbar .actions > *,
+  .card-actions > *,
+  .field.wide > .button,
+  .field.wide > .ghost-button,
+  .field.wide > .danger-button,
+  .field-grid .field > .button,
+  .field-grid .field > .ghost-button,
+  .field-grid .field > .danger-button {
+    width: 100%;
+  }
+
   .button,
   .ghost-button,
   .danger-button {
-    width: 100%;
+    min-height: 40px;
   }
 
   .bar-row {
@@ -1088,6 +1160,7 @@ tr:last-child td {
 
   .metric-card {
     min-height: 120px;
+    gap: 10px;
   }
 
   .identity-pass {
@@ -1104,6 +1177,16 @@ tr:last-child td {
 @media (max-width: 430px) {
   .topbar {
     grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .top-controls {
+    grid-template-columns: 1fr;
+  }
+
+  #logoutButton {
+    min-height: 36px;
+    padding-inline: 10px;
+    font-size: 0.82rem;
   }
 
   .page-title span {
@@ -1126,6 +1209,14 @@ tr:last-child td {
   .timeline-item,
   .identity-pass {
     padding: 12px;
+  }
+
+  .metric-top {
+    gap: 8px;
+  }
+
+  .metric-value {
+    font-size: 1.72rem;
   }
 
   .bar-row {
